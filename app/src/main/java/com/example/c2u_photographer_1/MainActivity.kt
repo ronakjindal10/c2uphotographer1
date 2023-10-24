@@ -31,6 +31,8 @@ import java.io.IOException
 import kotlin.math.min
 //import androidx.databinding.DataBindingUtil
 import com.example.c2u_photographer_1.databinding.ActivityMainBinding
+import java.util.concurrent.TimeUnit
+import android.widget.ScrollView
 
 // This is the main activity class of the app
 class MainActivity : AppCompatActivity() {
@@ -47,7 +49,7 @@ class MainActivity : AppCompatActivity() {
     val apiUrl = "https://c2u-api.onrender.com/upload-photo"
 
     // This is the request code for selecting a photo from the gallery
-    val pickImage = 100
+//    val pickImage = 100
 
     // This is the bitmap object for the watermark image
     var watermarkBitmap: Bitmap? = null
@@ -74,39 +76,39 @@ class MainActivity : AppCompatActivity() {
         startFileObserver()
 
         // Set a click listener for the select photo button
-        binding.selectPhotoButton.setOnClickListener {
-            // Create an intent to pick a photo from the gallery
-            val gallery = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
-            startActivityForResult(gallery, pickImage)
-        }
+//        binding.selectPhotoButton.setOnClickListener {
+//            // Create an intent to pick a photo from the gallery
+//            val gallery = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
+//            startActivityForResult(gallery, pickImage)
+//        }
     }
 
     // This is the method that is called when an activity returns a result
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (resultCode == RESULT_OK && requestCode == pickImage) {
-            // Get the image URI from the data intent
-            val imageUri = data?.data
-
-            // Check if the image URI is not null
-            if (imageUri != null) {
-                // Get the image file path from the image URI
-                val imagePath = getImagePathFromUri(imageUri)
-
-                // Check if the image file path is not null or empty
-                if (!imagePath.isNullOrEmpty()) {
-                    // Process and upload the image file
-                    processAndUploadImageFile(imagePath)
-                } else {
-                    // Log an error message
-                    logMessage("textspace            Could not get image file path from URI")
-                }
-            } else {
-                // Log an error message
-                logMessage("textspace            Could not get image URI from data intent")
-            }
-        }
-    }
+//    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+//        super.onActivityResult(requestCode, resultCode, data)
+//        if (resultCode == RESULT_OK && requestCode == pickImage) {
+//            // Get the image URI from the data intent
+//            val imageUri = data?.data
+//
+//            // Check if the image URI is not null
+//            if (imageUri != null) {
+//                // Get the image file path from the image URI
+//                val imagePath = getImagePathFromUri(imageUri)
+//
+//                // Check if the image file path is not null or empty
+//                if (!imagePath.isNullOrEmpty()) {
+//                    // Process and upload the image file
+//                    processAndUploadImageFile(imagePath)
+//                } else {
+//                    // Log an error message
+//                    logMessage("Could not get image file path from URI")
+//                }
+//            } else {
+//                // Log an error message
+//                logMessage("Could not get image URI from data intent")
+//            }
+//        }
+//    }
 
     // This is the method that loads the watermark image from the watermark directory
     fun loadWatermark() {
@@ -120,10 +122,10 @@ class MainActivity : AppCompatActivity() {
                 watermarkBitmap = BitmapFactory.decodeFile(watermarkFile.absolutePath)
 
                 // Log a success message
-                logMessage("textspace            Watermark image loaded successfully")
+                logMessage("Watermark image loaded successfully")
             } else {
                 // Log an error message
-                logMessage("textspace            Watermark file does not exist or is not readable")
+                logMessage("Watermark file does not exist or is not readable")
             }
         } catch (e: Exception) {
             // Log an exception message
@@ -156,10 +158,10 @@ class MainActivity : AppCompatActivity() {
             fileObserver?.startWatching()
 
             // Log a success message
-            logMessage("textspace            File observer started successfully")
+            logMessage("File observer started successfully")
         } catch (e: Exception) {
             // Log an exception message
-            logMessage("textspace            Exception while starting file observer: ${e.message}")
+            logMessage("Exception while starting file observer: ${e.message}")
         }
     }
 
@@ -200,7 +202,7 @@ class MainActivity : AppCompatActivity() {
             cursor?.close()
         } catch (e: Exception) {
             // Log an exception message
-            logMessage("textspace            Exception while getting image path from URI: ${e.message}")
+            logMessage("Exception while getting image path from URI: ${e.message}")
         }
         return imagePath
     }
@@ -215,7 +217,7 @@ class MainActivity : AppCompatActivity() {
             if (imageFile.exists() && imageFile.canRead()) {
 
                 // Log a message that the image file is being processed
-                logMessage("textspace            Processing image file: ${imageFile.name}")
+                logMessage("Processing image file: ${imageFile.name}")
 
                 // Decode the image file into a bitmap object
                 val originalBitmap = BitmapFactory.decodeFile(imageFile.absolutePath)
@@ -233,11 +235,11 @@ class MainActivity : AppCompatActivity() {
                 uploadByteArrayToApi(byteArray, imageFile.name)
             } else {
                 // Log an error message
-                logMessage("textspace            Image file does not exist or is not readable")
+                logMessage("Image file does not exist or is not readable")
             }
         } catch (e: Exception) {
             // Log an exception message
-            logMessage("textspace            Exception while processing and uploading image file: ${e.message}")
+            logMessage("Exception while processing and uploading image file: ${e.message}")
         }
     }
 
@@ -245,8 +247,8 @@ class MainActivity : AppCompatActivity() {
     fun resizeAndCompressBitmap(originalBitmap: Bitmap): Bitmap {
 
         // This is the maximum width and height of the resized bitmap in pixels
-        val maxWidth = 800
-        val maxHeight = 600
+        val maxWidth = 2560
+        val maxHeight = 1440
 
         // This is the quality of the compressed bitmap in percentage
         val quality = 80
@@ -344,66 +346,117 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    // This is the method that uploads the byte array to the API server
     fun uploadByteArrayToApi(byteArray: ByteArray, fileName: String) {
-
-// Log a message that the byte array is being uploaded
+        // Log a message that the byte array is being uploaded
         logMessage("Uploading byte array: $fileName")
 
-// Create a multipart request body object with the photo field and the byte array as the value
+        // Create a multipart request body object with the photo field and the byte array as the value
         val requestBody = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
             .addFormDataPart("photo", fileName, byteArray.toRequestBody("image/jpeg".toMediaType()))
             .build()
 
-// Create a request object with the API URL and the request body
+        // Create a request object with the API URL and the request body
         val request = Builder()
             .url(apiUrl)
             .post(requestBody)
             .build()
 
-// Create an OK HTTP client object to execute the request
-        val client = OkHttpClient()
+        // Create an OK HTTP client object to execute the request with a 15 second timeout
+        val client = OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .writeTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(10, TimeUnit.SECONDS)
+            .build()
 
-// Enqueue the request and get a response asynchronously
+        // Define a variable to keep track of the number of retries
+        var retries = 0
+        // Define a variable to store the maximum number of retries allowed
+        val maxRetries = 3
+
         client.newCall(request).enqueue(object : Callback {
-
-            // This is the method that is called when the request fails
             override fun onFailure(call: okhttp3.Call, e: IOException) {
-// Log an error message
-                logMessage("Upload failed: ${e.message}")
+                // Check if we have reached the maximum number of retries
+                if (retries < maxRetries) {
+                    // Increment the number of retries
+                    retries++
+
+                    // Log an error message with the exception message and retry count
+                    logMessage("Upload failed (${e.message}), retrying ($retries)")
+
+                    // Enqueue the request again with the same callback function
+                    call.clone().enqueue(this)
+                } else {
+                    // Log an error message with the exception message and retry count
+                    logMessage("Upload failed (${e.message}), giving up after $retries retries")
+                }
             }
 
-            // This is the method that is called when the request succeeds
             override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
-// Check if the response is successful
+                // Check if the response is successful
                 if (response.isSuccessful) {
                     try {
-// Get the response body as a string
+                        // Get the response body as a string
                         val responseBody = response.body?.string()
 
-// Check if the response body is not null or empty
+                        // Check if the response body is not null or empty
                         if (!responseBody.isNullOrEmpty()) {
-// Parse the response body as a JSON object
+                            // Parse the response body as a JSON object
                             val jsonObject = JSONObject(responseBody)
 
-// Get the message and fileName fields from the JSON object
+                            // Get the message and fileName fields from the JSON object
                             val message = jsonObject.getString("message")
                             val fileName = jsonObject.getString("fileName")
 
-// Log a success message with the message and fileName fields
+                            // Log a success message with the message and fileName fields
                             logMessage("Upload successful: $message, $fileName")
                         } else {
-// Log an error message
-                            logMessage("Upload failed: Response body is null or empty")
+                            // Check if we have reached the maximum number of retries
+                            if (retries < maxRetries) {
+                                // Increment the number of retries
+                                retries++
+
+                                // Log an error message with the retry count
+                                logMessage("Upload failed: Response body is null or empty, retrying ($retries)")
+
+                                // Enqueue the request again with the same callback function
+                                call.clone().enqueue(this)
+                            } else {
+                                // Log an error message with the retry count
+                                logMessage("Upload failed: Response body is null or empty, giving up after $retries retries")
+                            }
                         }
                     } catch (e: Exception) {
-// Log an exception message
-                        logMessage("Exception while parsing response: ${e.message}")
+                        // Check if we have reached the maximum number of retries
+                        if (retries < maxRetries) {
+                            // Increment the number of retries
+                            retries++
+
+                            // Log an exception message with the retry count
+                            logMessage("Exception while parsing response (${e.message}), retrying ($retries)")
+
+                            // Enqueue the request again with the same callback function
+                            call.clone().enqueue(this)
+                        } else {
+                            // Log an exception message with the retry count
+                            logMessage("Exception while parsing response (${e.message}), giving up after $retries retries")
+                        }
                     }
                 } else {
-// Log an error message with the response code and message
-                    logMessage("Upload failed: ${response.code} ${response.message}")
+                    // Check if we have reached the maximum number of retries
+                    if (retries < maxRetries) {
+                        // Increment the number of retries
+                        retries++
+
+                        // Log an error message with the response code, message, and retry count
+                        logMessage("Upload failed: ${response.code} ${response.message}, retrying ($retries)")
+
+                        // Enqueue the request again with the same callback function
+                        call.clone().enqueue(this)
+                    } else {
+                        // Log an error message with the response code, message, and retry count
+                        logMessage("Upload failed: ${response.code} ${response.message}, giving up after $retries retries")
+                    }
                 }
             }
         })
@@ -422,19 +475,19 @@ class MainActivity : AppCompatActivity() {
             val layout = logTextView?.layout
 
 // Check if the layout is not null
-//            if (layout != null) {
-//// Get the scroll amount to scroll to the bottom of the text view
-//                val scrollAmount = layout.getLineTop(logTextView!!.lineCount) - logTextView!!.height
-//
-//// Check if the scroll amount is positive or zero
-//                if (scrollAmount >= 0) {
-//// Scroll to the bottom of the text view by using smooth scroll by amount method
-//                    logTextView?.smoothScrollBy(0, scrollAmount)
-//                } else {
-//// Scroll to the top of the text view
-//                    logTextView?.scrollTo(0, 0)
-//                }
-//            }
+            if (layout != null) {
+// Get the scroll amount to scroll to the bottom of the text view
+                val scrollAmount = layout.getLineTop(logTextView!!.lineCount) - logTextView!!.height
+
+// Check if the scroll amount is positive or zero
+                if (scrollAmount >= 0) {
+// Scroll to the bottom of the text view by using smooth scroll by amount method
+                    logTextView?.scrollTo(0, scrollAmount)
+                } else {
+// Scroll to the top of the text view
+                    logTextView?.scrollTo(0, 0)
+                }
+            }
         }
     }
 
