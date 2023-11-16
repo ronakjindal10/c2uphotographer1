@@ -5,13 +5,20 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Matrix
+import android.media.ExifInterface
 import android.net.Uri
 import android.os.Bundle
 import android.os.FileObserver
 import android.provider.MediaStore
+import android.text.Spannable
+import android.text.SpannableString
+import android.text.style.ForegroundColorSpan
+import android.util.Log
 import android.widget.Button
 import android.widget.TextView
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -33,6 +40,7 @@ import kotlin.math.min
 import com.example.c2u_photographer_1.databinding.ActivityMainBinding
 import java.util.concurrent.TimeUnit
 import android.widget.ScrollView
+import java.io.FileInputStream
 
 // This is the main activity class of the app
 class MainActivity : AppCompatActivity() {
@@ -40,7 +48,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
 
     // This is the directory where the photos are getting added
+    // Nikon on Redmi K20:
     val photoDir = "/storage/emulated/0/Nikon downloads"
+    //Hemant Royale Camera's Sony Camera below:
+    // val photoDir = "/storage/emulated/0/DCIM/Transfer & Tagging add-on/e522445b-bb7e-468b-9c1f-b5ffd19c2947/a30304c5-5f08-4670-a8a9-5de328ce82d5/02d9ec51-f471-4afb-8476-782634a762f6"
+    // val photoDir = "/storage/emulated/10/DCIM/Transfer & Tagging add-on/be86c1fd-3dec-4628-80de-5dd2b088f692/3a760bb9-876b-4836-95e7-cba9f2c6e2d3/e5528206-d021-4fdf-9ad6-b9efd87147d2"
 
     // This is the directory where the watermark is
     val watermarkDir = "/storage/emulated/0/Watermark/watermark.png"
@@ -74,41 +86,7 @@ class MainActivity : AppCompatActivity() {
 
         // Start the file observer to watch for new photos in the photo directory
         startFileObserver()
-
-        // Set a click listener for the select photo button
-//        binding.selectPhotoButton.setOnClickListener {
-//            // Create an intent to pick a photo from the gallery
-//            val gallery = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
-//            startActivityForResult(gallery, pickImage)
-//        }
     }
-
-    // This is the method that is called when an activity returns a result
-//    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-//        super.onActivityResult(requestCode, resultCode, data)
-//        if (resultCode == RESULT_OK && requestCode == pickImage) {
-//            // Get the image URI from the data intent
-//            val imageUri = data?.data
-//
-//            // Check if the image URI is not null
-//            if (imageUri != null) {
-//                // Get the image file path from the image URI
-//                val imagePath = getImagePathFromUri(imageUri)
-//
-//                // Check if the image file path is not null or empty
-//                if (!imagePath.isNullOrEmpty()) {
-//                    // Process and upload the image file
-//                    processAndUploadImageFile(imagePath)
-//                } else {
-//                    // Log an error message
-//                    logMessage("Could not get image file path from URI")
-//                }
-//            } else {
-//                // Log an error message
-//                logMessage("Could not get image URI from data intent")
-//            }
-//        }
-//    }
 
     // This is the method that loads the watermark image from the watermark directory
     fun loadWatermark() {
@@ -122,14 +100,14 @@ class MainActivity : AppCompatActivity() {
                 watermarkBitmap = BitmapFactory.decodeFile(watermarkFile.absolutePath)
 
                 // Log a success message
-                logMessage("Watermark image loaded successfully")
+                logMessage("Watermark image loaded successfully", Color.GREEN)
             } else {
                 // Log an error message
-                logMessage("Watermark file does not exist or is not readable")
+                logMessage("Watermark file does not exist or is not readable", Color.YELLOW)
             }
         } catch (e: Exception) {
             // Log an exception message
-            logMessage("Exception while loading watermark image: ${e.message}")
+            logMessage("Exception while loading watermark image: ${e.message}", Color.YELLOW)
         }
     }
 
@@ -147,8 +125,6 @@ class MainActivity : AppCompatActivity() {
 
                         // Get the full file path of the new photo file by appending it to the photo directory path
                         val filePath = "$photoDir/$path"
-
-                        // Process and upload the new photo file
                         processAndUploadImageFile(filePath)
                     }
                 }
@@ -158,10 +134,10 @@ class MainActivity : AppCompatActivity() {
             fileObserver?.startWatching()
 
             // Log a success message
-            logMessage("File observer started successfully")
+            logMessage("File observer started successfully", Color.GREEN)
         } catch (e: Exception) {
             // Log an exception message
-            logMessage("Exception while starting file observer: ${e.message}")
+            logMessage("Exception while starting file observer: ${e.message}", Color.RED)
         }
     }
 
@@ -223,7 +199,7 @@ class MainActivity : AppCompatActivity() {
                 val originalBitmap = BitmapFactory.decodeFile(imageFile.absolutePath)
 
                 // Resize and compress the bitmap object
-                val resizedBitmap = resizeAndCompressBitmap(originalBitmap)
+                val resizedBitmap = resizeAndCompressBitmap(originalBitmap, filePath)
 
                 // Add a watermark to the bitmap object
                 val watermarkedBitmap = addWatermarkToBitmap(resizedBitmap)
@@ -244,47 +220,91 @@ class MainActivity : AppCompatActivity() {
     }
 
     // This is the method that resizes and compresses the bitmap object
-    fun resizeAndCompressBitmap(originalBitmap: Bitmap): Bitmap {
-
-        // This is the maximum width and height of the resized bitmap in pixels
+//    fun resizeAndCompressBitmap(originalBitmap: Bitmap): Bitmap {
+//
+//        // This is the maximum width and height of the resized bitmap in pixels
+//        val maxWidth = 2560
+//        val maxHeight = 1440
+//
+//        // This is the quality of the compressed bitmap in percentage
+//        val quality = 75
+//
+//        // Get the original width and height of the bitmap in pixels
+//        val originalWidth = originalBitmap.width
+//        val originalHeight = originalBitmap.height
+//
+//        // Calculate the scale factor for resizing the bitmap
+//        val scaleFactor = min(maxWidth.toFloat() / originalWidth, maxHeight.toFloat() / originalHeight)
+//
+//        // Create a matrix object for scaling the bitmap
+//        val matrix = Matrix()
+//
+//        // Set the scale factor to the matrix
+//        matrix.postScale(scaleFactor, scaleFactor)
+//
+//        // Create a new bitmap object by applying the matrix to the original bitmap
+//        val resizedBitmap = Bitmap.createBitmap(originalBitmap, 0, 0, originalWidth, originalHeight, matrix, true)
+//
+//        // Create a byte output stream object to write the compressed bitmap data
+//        val byteOutputStream = ByteArrayOutputStream()
+//
+//        // Compress the resized bitmap into a JPEG format with the given quality and write it to the byte output stream
+//        resizedBitmap.compress(Bitmap.CompressFormat.JPEG, quality, byteOutputStream)
+//
+//        // Convert the byte output stream into a byte array
+//        val byteArray = byteOutputStream.toByteArray()
+//
+//        // Decode the byte array into a new bitmap object
+//        val compressedBitmap = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size)
+//
+//        // Return the compressed bitmap object
+//        return compressedBitmap
+//
+//    }
+    fun resizeAndCompressBitmap(originalBitmap: Bitmap, filePath: String): Bitmap {
         val maxWidth = 2560
         val maxHeight = 1440
+        val quality = 75
 
-        // This is the quality of the compressed bitmap in percentage
-        val quality = 80
-
-        // Get the original width and height of the bitmap in pixels
         val originalWidth = originalBitmap.width
         val originalHeight = originalBitmap.height
+
+        val exif = ExifInterface(filePath)
+        val orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+
+        val matrix = Matrix()
+
+        // Apply rotation based on orientation
+        when (orientation) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
+            ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
+            ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
+        }
 
         // Calculate the scale factor for resizing the bitmap
         val scaleFactor = min(maxWidth.toFloat() / originalWidth, maxHeight.toFloat() / originalHeight)
 
-        // Create a matrix object for scaling the bitmap
-        val matrix = Matrix()
-
-        // Set the scale factor to the matrix
+        // Apply scaling to the matrix
         matrix.postScale(scaleFactor, scaleFactor)
 
-        // Create a new bitmap object by applying the matrix to the original bitmap
+        // Create a new bitmap by applying the matrix to the original bitmap
         val resizedBitmap = Bitmap.createBitmap(originalBitmap, 0, 0, originalWidth, originalHeight, matrix, true)
 
-        // Create a byte output stream object to write the compressed bitmap data
+        // Create a byte output stream for compressed bitmap data
         val byteOutputStream = ByteArrayOutputStream()
 
-        // Compress the resized bitmap into a JPEG format with the given quality and write it to the byte output stream
+        // Compress the resized bitmap into JPEG format with the given quality and write to the byte output stream
         resizedBitmap.compress(Bitmap.CompressFormat.JPEG, quality, byteOutputStream)
 
-        // Convert the byte output stream into a byte array
+        // Convert the byte output stream to a byte array
         val byteArray = byteOutputStream.toByteArray()
 
-        // Decode the byte array into a new bitmap object
+        // Decode the byte array into a new bitmap
         val compressedBitmap = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size)
 
-        // Return the compressed bitmap object
         return compressedBitmap
-
     }
+
 
     // This is the method that adds a watermark to the bitmap object
     fun addWatermarkToBitmap(originalBitmap: Bitmap): Bitmap {
@@ -321,7 +341,7 @@ class MainActivity : AppCompatActivity() {
 
         } else {
 // Log an error message
-            logMessage("Watermark image is null")
+            logMessage("Watermark image is null", Color.YELLOW)
         }
 
 // Return the original bitmap object as a fallback
@@ -364,9 +384,9 @@ class MainActivity : AppCompatActivity() {
 
         // Create an OK HTTP client object to execute the request with a 15 second timeout
         val client = OkHttpClient.Builder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .writeTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(10, TimeUnit.SECONDS)
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .writeTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
             .build()
 
         // Define a variable to keep track of the number of retries
@@ -382,13 +402,13 @@ class MainActivity : AppCompatActivity() {
                     retries++
 
                     // Log an error message with the exception message and retry count
-                    logMessage("Upload failed (${e.message}), retrying ($retries)")
+                    logMessage("Upload failed for file ${fileName} (${e.message}), retrying ($retries)", Color.YELLOW)
 
                     // Enqueue the request again with the same callback function
                     call.clone().enqueue(this)
                 } else {
-                    // Log an error message with the exception message and retry count
-                    logMessage("Upload failed (${e.message}), giving up after $retries retries")
+                    // Log an error message with the exception message and retry count in red colour
+                    logMessage("Upload failed for file ${fileName} (${e.message}), giving up after $retries retries", Color.RED)
                 }
             }
 
@@ -406,10 +426,10 @@ class MainActivity : AppCompatActivity() {
 
                             // Get the message and fileName fields from the JSON object
                             val message = jsonObject.getString("message")
-                            val fileName = jsonObject.getString("fileName")
+                            val apiFileName = jsonObject.getString("fileName")
 
                             // Log a success message with the message and fileName fields
-                            logMessage("Upload successful: $message, $fileName")
+                            logMessage("Upload successful of $fileName: $message, $apiFileName", Color.GREEN)
                         } else {
                             // Check if we have reached the maximum number of retries
                             if (retries < maxRetries) {
@@ -417,13 +437,13 @@ class MainActivity : AppCompatActivity() {
                                 retries++
 
                                 // Log an error message with the retry count
-                                logMessage("Upload failed: Response body is null or empty, retrying ($retries)")
+                                logMessage("Upload failed for file ${fileName}: Response body is null or empty, retrying ($retries)", Color.YELLOW)
 
                                 // Enqueue the request again with the same callback function
                                 call.clone().enqueue(this)
                             } else {
                                 // Log an error message with the retry count
-                                logMessage("Upload failed: Response body is null or empty, giving up after $retries retries")
+                                logMessage("Upload failed for file ${fileName}: Response body is null or empty, giving up after $retries retries", Color.RED)
                             }
                         }
                     } catch (e: Exception) {
@@ -433,13 +453,13 @@ class MainActivity : AppCompatActivity() {
                             retries++
 
                             // Log an exception message with the retry count
-                            logMessage("Exception while parsing response (${e.message}), retrying ($retries)")
+                            logMessage("Exception while parsing response for file ${fileName} (${e.message}), retrying ($retries)", Color.YELLOW)
 
                             // Enqueue the request again with the same callback function
                             call.clone().enqueue(this)
                         } else {
                             // Log an exception message with the retry count
-                            logMessage("Exception while parsing response (${e.message}), giving up after $retries retries")
+                            logMessage("Exception while parsing response for file ${fileName} (${e.message}), giving up after $retries retries", Color.RED)
                         }
                     }
                 } else {
@@ -449,13 +469,13 @@ class MainActivity : AppCompatActivity() {
                         retries++
 
                         // Log an error message with the response code, message, and retry count
-                        logMessage("Upload failed: ${response.code} ${response.message}, retrying ($retries)")
+                        logMessage("Upload failed for file ${fileName}: ${response.code} ${response.message}, retrying ($retries)", Color.YELLOW)
 
                         // Enqueue the request again with the same callback function
                         call.clone().enqueue(this)
                     } else {
                         // Log an error message with the response code, message, and retry count
-                        logMessage("Upload failed: ${response.code} ${response.message}, giving up after $retries retries")
+                        logMessage("Upload failed for file ${fileName}: ${response.code} ${response.message}, giving up after $retries retries", Color.RED)
                     }
                 }
             }
@@ -463,13 +483,38 @@ class MainActivity : AppCompatActivity() {
     }
 
     // This is the method that logs a message to the log text view and scrolls it to the bottom
-    fun logMessage(message: String) {
+    fun logMessage(message: String, color: Int = Color.WHITE) {
         runOnUiThread {
-// Append a new line character to the message
-            val newLineMessage = "$message\n"
+            // Save current color
+            // val originalColor = logTextView?.currentTextColor
 
-// Append the new line message to the log text view text
-            logTextView?.append(newLineMessage)
+            // Save current length of text
+            val originalLength = logTextView?.length()
+
+            // Append a new line character to the message
+            logTextView?.append("$message\n")
+
+            // Get text as SpannableString
+            val spannableText = SpannableString(logTextView?.text)
+
+            // Set color on only the new span
+            if (originalLength != null) {
+                logTextView?.length()?.let {
+                    spannableText.setSpan(ForegroundColorSpan(color), originalLength,
+                        it, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }
+            }
+
+            // Set spannable text on logTextView
+            logTextView?.text = spannableText
+
+            // Set color for just the new text
+            // logTextView?.setTextColor(color, originalLength, logTextView?.length())
+
+            // Restore original color
+            // if (originalColor != null) {
+            //     logTextView?.setTextColor(originalColor)
+            // }
 
 // Get the layout of the log text view
             val layout = logTextView?.layout
