@@ -11,6 +11,8 @@ import android.media.ExifInterface
 import android.net.Uri
 import android.os.Bundle
 import android.os.FileObserver
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
 import android.text.Spannable
 import android.text.SpannableString
@@ -41,6 +43,7 @@ import com.example.c2u_photographer_1.databinding.ActivityMainBinding
 import java.util.concurrent.TimeUnit
 import android.widget.ScrollView
 import java.io.FileInputStream
+import java.util.Stack
 
 // This is the main activity class of the app
 class MainActivity : AppCompatActivity() {
@@ -50,7 +53,9 @@ class MainActivity : AppCompatActivity() {
     // This is the directory where the photos are getting added
     // Nikon on Redmi K20:
     val photoDir = "/storage/emulated/0/Nikon downloads"
-    //Hemant Royale Camera's Sony Camera below:
+    // Bangalore photographer's Sony A7M3:
+    // val photoDir = "/storage/emulated/0/DCIM/Transfer & Tagging add-on/e522445b-bb7e-468b-9c1f-b5ffd19c2947/674d5a5a-6be5-4f9b-82b9-92231010313d/c144a81b-77db-4d8a-815b-1da75ec8f678"
+    // Hemant Royale Camera's Sony Camera below:
     // val photoDir = "/storage/emulated/0/DCIM/Transfer & Tagging add-on/e522445b-bb7e-468b-9c1f-b5ffd19c2947/a30304c5-5f08-4670-a8a9-5de328ce82d5/02d9ec51-f471-4afb-8476-782634a762f6"
     // val photoDir = "/storage/emulated/10/DCIM/Transfer & Tagging add-on/be86c1fd-3dec-4628-80de-5dd2b088f692/3a760bb9-876b-4836-95e7-cba9f2c6e2d3/e5528206-d021-4fdf-9ad6-b9efd87147d2"
 
@@ -68,9 +73,13 @@ class MainActivity : AppCompatActivity() {
 
     // This is the file observer object that monitors the photo directory for changes
     var fileObserver: FileObserver? = null
+//    var observer: FileObserver? = null
 
     // This is the text view object that displays the logs to the user
     var logTextView: TextView? = null
+
+    // We'll monitor the following events:
+    val mask = FileObserver.CLOSE_WRITE or FileObserver.CREATE
 
     // This is the method that is called when the activity is created
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -111,27 +120,122 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // This is the method that starts the file observer to watch for new photos in the photo directory
-    fun startFileObserver() {
+    //This function checks if the file is ready to be uploaded, avoiding partially downloaded files
+    fun isFileStable(file: File, delayMillis: Long = 2000): Boolean {
         try {
-            // Create a file observer object for the photo directory with a close write event mask
-            fileObserver = object : FileObserver(photoDir, FileObserver.CLOSE_WRITE) {
+            val initialSize = file.length()
+            logMessage("Checking file size, initial size: $initialSize")
 
-                // This is the method that is called when an event occurs in the photo directory
+            // Wait for a specified delay
+            Thread.sleep(delayMillis)
+
+            val finalSize = file.length()
+            logMessage("Checking file size, final size: $finalSize")
+
+            // File is considered stable if its size hasn't changed
+            return initialSize == finalSize
+        } catch (e: Exception) {
+            logMessage("Exception while checking file stability: ${e.message}", Color.YELLOW)
+            return false
+        }
+    }
+
+//     This is the method that starts the file observer to watch for new photos in the photo directory
+//    fun startFileObserver() {
+//        try {
+//            // Create a file observer object for the photo directory with a close write event mask
+//            fileObserver = object : FileObserver(photoDir, FileObserver.ALL_EVENTS) {
+//
+//                // This is the method that is called when an event occurs in the photo directory
+//                override fun onEvent(event: Int, path: String?) {
+//                    // LogMessage with details of the file observer, event emitted and current time
+//                    logMessage("File observer event: $event, path: $path, current time: ${System.currentTimeMillis()}", Color.WHITE)
+//
+//                    // Check if the event is a close write event and the path is not null or empty
+//                    if (event == FileObserver.CLOSE_WRITE && !path.isNullOrEmpty()) {
+//
+//                        // Get the full file path of the new photo file by appending it to the photo directory path
+//                        val filePath = "$photoDir/$path"
+//                        processAndUploadImageFile(filePath)
+//                    }
+//                }
+//            }
+//
+//            // Start watching for events in the photo directory
+//            fileObserver?.startWatching()
+//
+//            // Log a success message
+//            logMessage("File observer started successfully", Color.GREEN)
+//        } catch (e: Exception) {
+//            // Log an exception message
+//            logMessage("Exception while starting file observer: ${e.message}", Color.RED)
+//        }
+//    }
+
+    // Recursive function to start file observers on all subdirectories
+    fun startWatchingDirectory(directory: File) {
+        try {
+            logMessage(
+                "Called startWatchingDirectory with directory: ${directory.path}",
+                Color.WHITE
+            )
+            directory.listFiles()?.forEach { file ->
+                if (file.isDirectory) {
+                    // Start watching this directory
+                    startWatchingDirectory(file)
+                }
+            }
+            // Create and start a file observer for this directory
+            fileObserver = object : FileObserver(directory.path, mask) {
                 override fun onEvent(event: Int, path: String?) {
-
-                    // Check if the event is a close write event and the path is not null or empty
-                    if (event == FileObserver.CLOSE_WRITE && !path.isNullOrEmpty()) {
-
-                        // Get the full file path of the new photo file by appending it to the photo directory path
-                        val filePath = "$photoDir/$path"
-                        processAndUploadImageFile(filePath)
+                    logMessage(
+                        "File observer event: $event, path: $path, current time: ${System.currentTimeMillis()}",
+                        Color.WHITE
+                    )
+                    if (event == FileObserver.CLOSE_WRITE && path != null && isFileStable(
+                            File("${directory.path}/$path")
+                        )){
+                        val filePath = "${directory.path}/$path"
+                        // Check if it's a directory or a file
+                        if (File(filePath).isDirectory) {
+                            // If it's a directory, start watching it
+                            logMessage(
+                                "Inside onEvent, detected new folder, calling startWatchingDirectory next for: ${
+                                    File(   
+                                        filePath
+                                    ).path
+                                }", Color.WHITE
+                            )
+                            startWatchingDirectory(File(filePath))
+                        } else {
+                            // If it's a file, process it
+                            logMessage(
+                                "Inside onEvent, detected new file, calling processAndUploadImageFile next for: ${
+                                    File(
+                                        filePath
+                                    ).path
+                                }", Color.WHITE
+                            )
+                            processAndUploadImageFile(filePath)
+                        }
                     }
                 }
             }
+            (fileObserver as FileObserver).startWatching()
+        } catch (e: Exception) {
+            // Log an exception message
+            logMessage("Exception while starting file observer: ${e.message}", Color.RED)
+        }
+    }
 
-            // Start watching for events in the photo directory
-            fileObserver?.startWatching()
+    // Function to start the recursive file observer
+    fun startFileObserver() {
+        try {
+            // Get the photo directory as a File object
+            val photoDirectory = File(photoDir)
+
+            // Start watching the photo directory and its subdirectories
+            startWatchingDirectory(photoDirectory)
 
             // Log a success message
             logMessage("File observer started successfully", Color.GREEN)
@@ -211,11 +315,11 @@ class MainActivity : AppCompatActivity() {
                 uploadByteArrayToApi(byteArray, imageFile.name)
             } else {
                 // Log an error message
-                logMessage("Image file does not exist or is not readable")
+                logMessage("Image file does not exist or is not readable", Color.RED)
             }
         } catch (e: Exception) {
             // Log an exception message
-            logMessage("Exception while processing and uploading image file: ${e.message}")
+            logMessage("Exception while processing and uploading image file: ${e.message}", Color.YELLOW)
         }
     }
 
