@@ -52,9 +52,9 @@ class MainActivity : AppCompatActivity() {
 
     // This is the directory where the photos are getting added
     // Nikon on Redmi K20:
-    val photoDir = "/storage/emulated/0/Nikon downloads"
+    // val photoDir = "/storage/emulated/0/Nikon downloads"
     // Bangalore photographer's Sony A7M3:
-    // val photoDir = "/storage/emulated/0/DCIM/Transfer & Tagging add-on"
+    val photoDir = "/storage/emulated/0/DCIM/Transfer & Tagging add-on"
     // val photoDir = "/storage/emulated/0/DCIM/Transfer & Tagging add-on/e522445b-bb7e-468b-9c1f-b5ffd19c2947/6c00f2fc-7bd3-48cc-a7e5-4a151aaed57b/b63df105-c1ae-4051-83dd-ab8a0bd3feef"
     // val photoDir = "/storage/emulated/0/DCIM/Transfer & Tagging add-on/e522445b-bb7e-468b-9c1f-b5ffd19c2947/2cfbb0a6-3d29-43e1-a59e-9f39124d15c4"
     // Hemant Royale Camera's Sony Camera below:
@@ -76,12 +76,14 @@ class MainActivity : AppCompatActivity() {
     // This is the file observer object that monitors the photo directory for changes
     var fileObserver: FileObserver? = null
 //    var observer: FileObserver? = null
+    private val allFileObservers = mutableListOf<FileObserver>()
 
     // This is the text view object that displays the logs to the user
     var logTextView: TextView? = null
 
     // We'll monitor the following events:
-    val mask = FileObserver.CLOSE_WRITE or FileObserver.MOVED_TO or FileObserver.CREATE
+    val newFolderEvent = 1073742080
+    val mask = FileObserver.CLOSE_WRITE or FileObserver.MOVED_TO or FileObserver.CREATE or newFolderEvent
     // val mask = FileObserver.CLOSE_WRITE
     // val mask = FileObserver.ALL_EVENTS
 
@@ -197,7 +199,7 @@ class MainActivity : AppCompatActivity() {
                         Color.GRAY
                     )
                     // logMessage("Event is equal to close write or moved to? ${event == FileObserver.CLOSE_WRITE || event == FileObserver.MOVED_TO}", Color.GRAY)
-                    if ((event == FileObserver.CLOSE_WRITE || event == FileObserver.MOVED_TO) && path != null && isFileStable(
+                    if ((event == FileObserver.CLOSE_WRITE || event == FileObserver.MOVED_TO || event == newFolderEvent) && path != null && isFileStable(
                             File("${directory.path}/$path")
                         )){
                         // if (event == FileObserver.CLOSE_WRITE && path != null){
@@ -228,6 +230,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             (fileObserver as FileObserver).startWatching()
+            allFileObservers.add(fileObserver as FileObserver)
         } catch (e: Exception) {
             // Log an exception message
             logMessage("Exception while starting file observer: ${e.message}", Color.RED)
@@ -255,7 +258,9 @@ class MainActivity : AppCompatActivity() {
     fun stopFileObserver() {
         try {
             // Stop watching for events in the photo directory
-            fileObserver?.stopWatching()
+            // fileObserver?.stopWatching()
+            allFileObservers.forEach { it.stopWatching() }
+            allFileObservers.clear()
 
             // Log a success message
             logMessage("File observer stopped successfully")
