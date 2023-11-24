@@ -54,7 +54,9 @@ class MainActivity : AppCompatActivity() {
     // Nikon on Redmi K20:
     val photoDir = "/storage/emulated/0/Nikon downloads"
     // Bangalore photographer's Sony A7M3:
-    // val photoDir = "/storage/emulated/0/DCIM/Transfer & Tagging add-on/e522445b-bb7e-468b-9c1f-b5ffd19c2947/674d5a5a-6be5-4f9b-82b9-92231010313d/c144a81b-77db-4d8a-815b-1da75ec8f678"
+    // val photoDir = "/storage/emulated/0/DCIM/Transfer & Tagging add-on"
+    // val photoDir = "/storage/emulated/0/DCIM/Transfer & Tagging add-on/e522445b-bb7e-468b-9c1f-b5ffd19c2947/6c00f2fc-7bd3-48cc-a7e5-4a151aaed57b/b63df105-c1ae-4051-83dd-ab8a0bd3feef"
+    // val photoDir = "/storage/emulated/0/DCIM/Transfer & Tagging add-on/e522445b-bb7e-468b-9c1f-b5ffd19c2947/2cfbb0a6-3d29-43e1-a59e-9f39124d15c4"
     // Hemant Royale Camera's Sony Camera below:
     // val photoDir = "/storage/emulated/0/DCIM/Transfer & Tagging add-on/e522445b-bb7e-468b-9c1f-b5ffd19c2947/a30304c5-5f08-4670-a8a9-5de328ce82d5/02d9ec51-f471-4afb-8476-782634a762f6"
     // val photoDir = "/storage/emulated/10/DCIM/Transfer & Tagging add-on/be86c1fd-3dec-4628-80de-5dd2b088f692/3a760bb9-876b-4836-95e7-cba9f2c6e2d3/e5528206-d021-4fdf-9ad6-b9efd87147d2"
@@ -79,7 +81,9 @@ class MainActivity : AppCompatActivity() {
     var logTextView: TextView? = null
 
     // We'll monitor the following events:
-    val mask = FileObserver.CLOSE_WRITE or FileObserver.CREATE
+    val mask = FileObserver.CLOSE_WRITE or FileObserver.MOVED_TO or FileObserver.CREATE
+    // val mask = FileObserver.CLOSE_WRITE
+    // val mask = FileObserver.ALL_EVENTS
 
     // This is the method that is called when the activity is created
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -177,7 +181,7 @@ class MainActivity : AppCompatActivity() {
         try {
             logMessage(
                 "Called startWatchingDirectory with directory: ${directory.path}",
-                Color.WHITE
+                Color.GRAY
             )
             directory.listFiles()?.forEach { file ->
                 if (file.isDirectory) {
@@ -190,11 +194,13 @@ class MainActivity : AppCompatActivity() {
                 override fun onEvent(event: Int, path: String?) {
                     logMessage(
                         "File observer event: $event, path: $path, current time: ${System.currentTimeMillis()}",
-                        Color.WHITE
+                        Color.GRAY
                     )
-                    if (event == FileObserver.CLOSE_WRITE && path != null && isFileStable(
+                    // logMessage("Event is equal to close write or moved to? ${event == FileObserver.CLOSE_WRITE || event == FileObserver.MOVED_TO}", Color.GRAY)
+                    if ((event == FileObserver.CLOSE_WRITE || event == FileObserver.MOVED_TO) && path != null && isFileStable(
                             File("${directory.path}/$path")
                         )){
+                        // if (event == FileObserver.CLOSE_WRITE && path != null){
                         val filePath = "${directory.path}/$path"
                         // Check if it's a directory or a file
                         if (File(filePath).isDirectory) {
@@ -204,7 +210,7 @@ class MainActivity : AppCompatActivity() {
                                     File(   
                                         filePath
                                     ).path
-                                }", Color.WHITE
+                                }", Color.GRAY
                             )
                             startWatchingDirectory(File(filePath))
                         } else {
@@ -214,7 +220,7 @@ class MainActivity : AppCompatActivity() {
                                     File(
                                         filePath
                                     ).path
-                                }", Color.WHITE
+                                }", Color.GRAY
                             )
                             processAndUploadImageFile(filePath)
                         }
@@ -587,7 +593,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     // This is the method that logs a message to the log text view and scrolls it to the bottom
-    fun logMessage(message: String, color: Int = Color.WHITE) {
+    fun logMessage(message: String, color: Int = Color.GRAY) {
         runOnUiThread {
             // Save current color
             // val originalColor = logTextView?.currentTextColor
