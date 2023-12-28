@@ -1,5 +1,6 @@
 package com.example.c2u_photographer_1
 import android.Manifest
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -42,7 +43,10 @@ import kotlin.math.min
 import com.example.c2u_photographer_1.databinding.ActivityMainBinding
 import java.util.concurrent.TimeUnit
 import android.widget.ScrollView
+import androidx.documentfile.provider.DocumentFile
 import java.io.FileInputStream
+import java.util.LinkedList
+import java.util.Queue
 import java.util.Stack
 
 // This is the main activity class of the app
@@ -54,15 +58,16 @@ class MainActivity : AppCompatActivity() {
     // Nikon on Redmi K20:
     // val photoDir = "/storage/emulated/0/Nikon downloads"
     // Bangalore photographer's Sony A7M3:
-    val photoDir = "/storage/emulated/0/DCIM/Transfer & Tagging add-on"
+    val photoDir = "/storage/emulated/10/Pictures/Canon EOS R10"
     // val photoDir = "/storage/emulated/0/DCIM/Transfer & Tagging add-on/e522445b-bb7e-468b-9c1f-b5ffd19c2947/6c00f2fc-7bd3-48cc-a7e5-4a151aaed57b/b63df105-c1ae-4051-83dd-ab8a0bd3feef"
     // val photoDir = "/storage/emulated/0/DCIM/Transfer & Tagging add-on/e522445b-bb7e-468b-9c1f-b5ffd19c2947/2cfbb0a6-3d29-43e1-a59e-9f39124d15c4"
     // Hemant Royale Camera's Sony Camera below:
     // val photoDir = "/storage/emulated/0/DCIM/Transfer & Tagging add-on/e522445b-bb7e-468b-9c1f-b5ffd19c2947/a30304c5-5f08-4670-a8a9-5de328ce82d5/02d9ec51-f471-4afb-8476-782634a762f6"
     // val photoDir = "/storage/emulated/10/DCIM/Transfer & Tagging add-on/be86c1fd-3dec-4628-80de-5dd2b088f692/3a760bb9-876b-4836-95e7-cba9f2c6e2d3/e5528206-d021-4fdf-9ad6-b9efd87147d2"
+    // val photoDir = "/storage/emulated/0/Pictures/Canon EOS RP"
 
     // This is the directory where the watermark is
-    val watermarkDir = "/storage/emulated/0/Watermark/watermark.png"
+    val watermarkDir = "/storage/emulated/10/Watermark/watermark.png"
 
     // This is the URL of the API to upload photos
     val apiUrl = "https://c2u-api.onrender.com/upload-photo"
@@ -86,6 +91,9 @@ class MainActivity : AppCompatActivity() {
     val mask = FileObserver.CLOSE_WRITE or FileObserver.MOVED_TO or FileObserver.CREATE or newFolderEvent
     // val mask = FileObserver.CLOSE_WRITE
     // val mask = FileObserver.ALL_EVENTS
+
+    // Define a queue for file uploads
+    val photoQueue: Queue<String> = LinkedList<String>()
 
     // This is the method that is called when the activity is created
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -146,37 +154,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-//     This is the method that starts the file observer to watch for new photos in the photo directory
-//    fun startFileObserver() {
-//        try {
-//            // Create a file observer object for the photo directory with a close write event mask
-//            fileObserver = object : FileObserver(photoDir, FileObserver.ALL_EVENTS) {
-//
-//                // This is the method that is called when an event occurs in the photo directory
-//                override fun onEvent(event: Int, path: String?) {
-//                    // LogMessage with details of the file observer, event emitted and current time
-//                    logMessage("File observer event: $event, path: $path, current time: ${System.currentTimeMillis()}", Color.WHITE)
-//
-//                    // Check if the event is a close write event and the path is not null or empty
-//                    if (event == FileObserver.CLOSE_WRITE && !path.isNullOrEmpty()) {
-//
-//                        // Get the full file path of the new photo file by appending it to the photo directory path
-//                        val filePath = "$photoDir/$path"
-//                        processAndUploadImageFile(filePath)
-//                    }
-//                }
-//            }
-//
-//            // Start watching for events in the photo directory
-//            fileObserver?.startWatching()
-//
-//            // Log a success message
-//            logMessage("File observer started successfully", Color.GREEN)
-//        } catch (e: Exception) {
-//            // Log an exception message
-//            logMessage("Exception while starting file observer: ${e.message}", Color.RED)
-//        }
-//    }
+    //Rewrite the startWatchingDirectory function to accept either a directory: File or a uri
 
     // Recursive function to start file observers on all subdirectories
     fun startWatchingDirectory(directory: File) {
@@ -218,13 +196,19 @@ class MainActivity : AppCompatActivity() {
                         } else {
                             // If it's a file, process it
                             logMessage(
-                                "Inside onEvent, detected new file, calling processAndUploadImageFile next for: ${
+                                "Inside onEvent, detected new file, adding it to uploadQueue: ${
                                     File(
                                         filePath
                                     ).path
                                 }", Color.GRAY
                             )
-                            processAndUploadImageFile(filePath)
+                            synchronized(photoQueue) {
+                                photoQueue.add(filePath)
+                            }
+                            // Trigger uploading if it's not already in progress
+                            if (photoQueue.size == 1) {
+                                processNextPhoto()
+                            }
                         }
                     }
                 }
@@ -298,6 +282,16 @@ class MainActivity : AppCompatActivity() {
         return imagePath
     }
 
+    fun processNextPhoto() {
+        if (photoQueue.isNotEmpty()) {
+            val photoPath = photoQueue.peek() // Retrieve but do not remove the head of this queue.
+            if (photoPath != null) {
+                logMessage("Processing next photo in queue: $photoPath")
+                processAndUploadImageFile(photoPath)
+            }
+        }
+    }
+
     // This is the method that processes and uploads the image file
     fun processAndUploadImageFile(filePath: String) {
         try {
@@ -334,48 +328,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // This is the method that resizes and compresses the bitmap object
-//    fun resizeAndCompressBitmap(originalBitmap: Bitmap): Bitmap {
-//
-//        // This is the maximum width and height of the resized bitmap in pixels
-//        val maxWidth = 2560
-//        val maxHeight = 1440
-//
-//        // This is the quality of the compressed bitmap in percentage
-//        val quality = 75
-//
-//        // Get the original width and height of the bitmap in pixels
-//        val originalWidth = originalBitmap.width
-//        val originalHeight = originalBitmap.height
-//
-//        // Calculate the scale factor for resizing the bitmap
-//        val scaleFactor = min(maxWidth.toFloat() / originalWidth, maxHeight.toFloat() / originalHeight)
-//
-//        // Create a matrix object for scaling the bitmap
-//        val matrix = Matrix()
-//
-//        // Set the scale factor to the matrix
-//        matrix.postScale(scaleFactor, scaleFactor)
-//
-//        // Create a new bitmap object by applying the matrix to the original bitmap
-//        val resizedBitmap = Bitmap.createBitmap(originalBitmap, 0, 0, originalWidth, originalHeight, matrix, true)
-//
-//        // Create a byte output stream object to write the compressed bitmap data
-//        val byteOutputStream = ByteArrayOutputStream()
-//
-//        // Compress the resized bitmap into a JPEG format with the given quality and write it to the byte output stream
-//        resizedBitmap.compress(Bitmap.CompressFormat.JPEG, quality, byteOutputStream)
-//
-//        // Convert the byte output stream into a byte array
-//        val byteArray = byteOutputStream.toByteArray()
-//
-//        // Decode the byte array into a new bitmap object
-//        val compressedBitmap = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size)
-//
-//        // Return the compressed bitmap object
-//        return compressedBitmap
-//
-//    }
     fun resizeAndCompressBitmap(originalBitmap: Bitmap, filePath: String): Bitmap {
         val maxWidth = 2560
         val maxHeight = 1440
@@ -524,6 +476,10 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     // Log an error message with the exception message and retry count in red colour
                     logMessage("Upload failed for file ${fileName} (${e.message}), giving up after $retries retries", Color.RED)
+                    synchronized(photoQueue) {
+                        photoQueue.remove() // This removes the head of the queue.
+                    }
+                    processNextPhoto() // Process the next photo in the queue
                 }
             }
 
@@ -545,6 +501,10 @@ class MainActivity : AppCompatActivity() {
 
                             // Log a success message with the message and fileName fields
                             logMessage("Upload successful of $fileName: $message, $apiFileName", Color.GREEN)
+                            synchronized(photoQueue) {
+                                photoQueue.remove() // This removes the head of the queue.
+                            }
+                            processNextPhoto() // Process the next photo in the queue
                         } else {
                             // Check if we have reached the maximum number of retries
                             if (retries < maxRetries) {
@@ -559,6 +519,10 @@ class MainActivity : AppCompatActivity() {
                             } else {
                                 // Log an error message with the retry count
                                 logMessage("Upload failed for file ${fileName}: Response body is null or empty, giving up after $retries retries", Color.RED)
+                                synchronized(photoQueue) {
+                                    photoQueue.remove() // This removes the head of the queue.
+                                }
+                                processNextPhoto() // Process the next photo in the queue
                             }
                         }
                     } catch (e: Exception) {
@@ -575,6 +539,10 @@ class MainActivity : AppCompatActivity() {
                         } else {
                             // Log an exception message with the retry count
                             logMessage("Exception while parsing response for file ${fileName} (${e.message}), giving up after $retries retries", Color.RED)
+                            synchronized(photoQueue) {
+                                photoQueue.remove() // This removes the head of the queue.
+                            }
+                            processNextPhoto() // Process the next photo in the queue
                         }
                     }
                 } else {
@@ -591,6 +559,10 @@ class MainActivity : AppCompatActivity() {
                     } else {
                         // Log an error message with the response code, message, and retry count
                         logMessage("Upload failed for file ${fileName}: ${response.code} ${response.message}, giving up after $retries retries", Color.RED)
+                        synchronized(photoQueue) {
+                            photoQueue.remove() // This removes the head of the queue.
+                        }
+                        processNextPhoto() // Process the next photo in the queue
                     }
                 }
             }
@@ -622,14 +594,6 @@ class MainActivity : AppCompatActivity() {
 
             // Set spannable text on logTextView
             logTextView?.text = spannableText
-
-            // Set color for just the new text
-            // logTextView?.setTextColor(color, originalLength, logTextView?.length())
-
-            // Restore original color
-            // if (originalColor != null) {
-            //     logTextView?.setTextColor(originalColor)
-            // }
 
 // Get the layout of the log text view
             val layout = logTextView?.layout
