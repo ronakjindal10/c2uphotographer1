@@ -2,7 +2,7 @@ This Android app allows photographers to upload photos in real time so that even
 
 Pending:
 ~~1. Sony app creates new folders abruptly for new photos. Need to scan all child folders for new photos to make this work reliably with Sony cameras.~~
-2. Upload photos one at a time instead of multiple at once. Since mobile internet bandwidth is limited, trying to upload multiple photos at once may lead to timeout for all requests.
+~~2. Upload photos one at a time instead of multiple at once. Since mobile internet bandwidth is limited, trying to upload multiple photos at once may lead to timeout for all requests.~~
 2. Implement autoscroll as per logs
 ~~3. Allow scrolling the app~~
 ~~3. Colour coding on logs: red for errors~~
@@ -14,3 +14,6 @@ Pending:
 9. Ability to read external storage on Android 13 to access photos created beyond this app's file scope
 10. Choose file directory to monitor from the UI so that app doesn't need to be loaded from Android Studio
 11. Show last photo uploaded with file name and time
+12. Log Photo Processor logs to the screen. Currently, it's only shown on Android studio logcats.
+12. Stop retrying upload of failed photos after a while
+13. Implement Work Manager to make the app processes more resilient
