@@ -23,7 +23,7 @@ import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlin.math.min
 
-class PhotoProcessor {
+class PhotoProcessor private constructor() {
 
     private val newPhotosQueue: Queue<String> = LinkedList<String>()
     private val failedUploadsQueue: Queue<String> = LinkedList<String>()
@@ -86,7 +86,7 @@ class PhotoProcessor {
                 }
 
                 try {
-                    Thread.sleep(500) // Sleep between checks. Adjust as needed.
+                    Thread.sleep(5000) // Sleep between checks. Adjust as needed.
                 } catch (ie: InterruptedException) {
                     Thread.currentThread().interrupt()
                     logMessage("Photo processing thread interrupted", Log.ERROR)
@@ -335,6 +335,11 @@ class PhotoProcessor {
             newPhotosQueue.add(newPhoto)
             logMessage("New photo added to queue: $newPhoto", Log.INFO)
         }
+    }
+
+    companion object {
+        // The single instance of PhotoProcessor
+        val instance: PhotoProcessor by lazy { PhotoProcessor() }
     }
 
     // Implement other necessary methods and cleanup based on your app's requirements...

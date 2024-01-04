@@ -21,7 +21,7 @@ class PhotoProcessingService : Service() {
         startForeground(1, createNotification())
 
         // Initialize and start photo processing
-        photoProcessor = PhotoProcessor() // Initialize your PhotoProcessor here
+        photoProcessor = PhotoProcessor.instance // Initialize your PhotoProcessor here
         photoProcessor.startProcessing()
 
         return START_STICKY  // Ensures service is restarted if killed

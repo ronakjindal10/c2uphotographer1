@@ -103,7 +103,7 @@ class MainActivity : AppCompatActivity() {
     private val uploadExecutor = Executors.newSingleThreadExecutor()
     val isRunning = AtomicBoolean(true)
 
-    private lateinit var photoProcessor: PhotoProcessor
+//    private lateinit var photoProcessor: PhotoProcessor
 
     // This is the method that is called when the activity is created
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -116,6 +116,8 @@ class MainActivity : AppCompatActivity() {
 
         // Start the file observer to watch for new photos in the photo directory
         startFileObserver()
+
+//        photoProcessor = PhotoProcessor()
 
         startPhotoService()
     }
@@ -179,7 +181,7 @@ class MainActivity : AppCompatActivity() {
                                     ).path
                                 }", Color.GRAY
                             )
-                            photoProcessor.addPhotoToQueue(filePath)
+                            PhotoProcessor.instance.addPhotoToQueue(filePath)
                         }
                     }
                 }
