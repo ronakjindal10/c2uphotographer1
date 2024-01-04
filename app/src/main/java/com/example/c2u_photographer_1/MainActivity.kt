@@ -117,8 +117,19 @@ class MainActivity : AppCompatActivity() {
         // Start the file observer to watch for new photos in the photo directory
         startFileObserver()
 
-        photoProcessor = PhotoProcessor()
-        photoProcessor.startProcessing()
+        startPhotoService()
+    }
+
+    // When you want to start the service
+    fun startPhotoService() {
+        val serviceIntent = Intent(this, PhotoProcessingService::class.java)
+        startForegroundService(serviceIntent)  // Start the service
+    }
+
+    // When you want to stop the service
+    fun stopPhotoService() {
+        val serviceIntent = Intent(this, PhotoProcessingService::class.java)
+        stopService(serviceIntent)  // Stop the service
     }
 
 
@@ -285,7 +296,6 @@ class MainActivity : AppCompatActivity() {
 
 // Stop the file observer
         stopFileObserver()
-        // Stop the photo processor
-        photoProcessor.stopProcessing()
+        stopPhotoService()
     }
 }

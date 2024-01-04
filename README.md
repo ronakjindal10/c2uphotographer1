@@ -16,4 +16,4 @@ Pending:
 11. Show last photo uploaded with file name and time
 12. Log Photo Processor logs to the screen. Currently, it's only shown on Android studio logcats.
 12. Stop retrying upload of failed photos after a while
-13. Implement Work Manager to make the app processes more resilient
+~~13. Implement Foreground service to make the app processes more resilient~~ Need to test how resilient the service is
