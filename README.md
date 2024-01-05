@@ -11,7 +11,7 @@ Pending:
 ~~6. Handle portrait photos watermarking~~
 7. Aggressive compression of photos after 2 failed attempts to make uploads work with low network speeds
 8. ~~Handle Sony's file transfer system where CLOSE_WRITE event is triggered for temp file creation and then a MOVED_TO event is triggered for the actual file creation~~
-9. Ability to read external storage on Android 13 to access photos created beyond this app's file scope
+~~9. Ability to read external storage on Android 13 to access photos created beyond this app's file scope~~
 10. Choose file directory to monitor from the UI so that app doesn't need to be loaded from Android Studio
 11. Show last photo uploaded with file name and time
 12. Log Photo Processor logs to the screen. Currently, it's only shown on Android studio logcats.
