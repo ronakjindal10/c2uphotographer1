@@ -51,6 +51,8 @@ import java.util.Queue
 import java.util.Stack
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
+import android.widget.Toast
+import de.lolhens.resticui.util.PermissionManager
 
 // This is the main activity class of the app
 class MainActivity : AppCompatActivity() {
@@ -111,15 +113,31 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Initialize the log text view
         logTextView = binding.logTextView
 
-        // Start the file observer to watch for new photos in the photo directory
-        startFileObserver()
+        if (PermissionManager.instance.hasStoragePermission(applicationContext, write = true)) {
+            startFileObserver()
+            startPhotoService()
+        } else {
+            PermissionManager.instance.requestStoragePermission(this, write = true)
+                .thenApply { granted ->
+                    if (granted) {
+                        startFileObserver()
+                        startPhotoService()
+                    } else {
+                        Toast.makeText(this, "Allow permission for storage access!", Toast.LENGTH_SHORT).show()
+                    }
+                }
+        }
+    }
 
-//        photoProcessor = PhotoProcessor()
-
-        startPhotoService()
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        PermissionManager.instance.onRequestPermissionsResult(requestCode)
     }
 
     // When you want to start the service
