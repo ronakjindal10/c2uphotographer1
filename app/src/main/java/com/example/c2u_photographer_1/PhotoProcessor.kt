@@ -38,7 +38,7 @@ class PhotoProcessor private constructor() {
     private val isRunning = AtomicBoolean(false)
 
     // This is the directory where the watermark is
-    val watermarkDir = "/storage/emulated/10/Watermark/watermark.png"
+    val watermarkDir = "/storage/emulated/0/Watermark/watermark.png"
 
     // This is the bitmap object for the watermark image
     var watermarkBitmap: Bitmap? = null

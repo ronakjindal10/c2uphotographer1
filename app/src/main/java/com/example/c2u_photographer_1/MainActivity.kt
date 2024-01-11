@@ -69,10 +69,10 @@ class MainActivity : AppCompatActivity() {
     // Hemant Royale Camera's Sony Camera below:
     // val photoDir = "/storage/emulated/0/DCIM/Transfer & Tagging add-on/e522445b-bb7e-468b-9c1f-b5ffd19c2947/a30304c5-5f08-4670-a8a9-5de328ce82d5/02d9ec51-f471-4afb-8476-782634a762f6"
     // val photoDir = "/storage/emulated/10/DCIM/Transfer & Tagging add-on/be86c1fd-3dec-4628-80de-5dd2b088f692/3a760bb9-876b-4836-95e7-cba9f2c6e2d3/e5528206-d021-4fdf-9ad6-b9efd87147d2"
-    val photoDir = "/storage/emulated/0/Pictures/Canon EOS RP"
+    // val photoDir = "/storage/emulated/0/Pictures/Canon EOS RP"
+    val photoDir = "/storage/emulated/0/DCIM/Transfer & Tagging add-on/"
 
-    // This is the directory where the watermark is
-    val watermarkDir = "/storage/emulated/10/Watermark/watermark.png"
+    // Watermark directory is in PhotoProcessor.kt
 
     // This is the URL of the API to upload photos
     val apiUrl = "https://c2u-api.onrender.com/upload-photo"
