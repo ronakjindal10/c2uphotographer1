@@ -4,6 +4,8 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Matrix
 import android.media.ExifInterface
+import android.os.Handler
+import android.os.Looper
 import android.text.Spannable
 import android.text.SpannableString
 import android.text.style.ForegroundColorSpan
@@ -38,7 +40,7 @@ class PhotoProcessor private constructor() {
     private val isRunning = AtomicBoolean(false)
 
     // This is the directory where the watermark is
-    val watermarkDir = "/storage/emulated/10/Watermark/watermark.png"
+    val watermarkDir = "/storage/emulated/0/Watermark/watermark.png"
 
     // This is the bitmap object for the watermark image
     var watermarkBitmap: Bitmap? = null
@@ -60,9 +62,9 @@ class PhotoProcessor private constructor() {
 
                 if (photoPath != null) {
                     try {
-                        logMessage("Processing: $photoPath", Log.INFO)
-                        logMessage("New photos queue: ${newPhotosQueue}", Log.INFO)
-                        logMessage("Failed uploads queue: ${failedUploadsQueue}", Log.INFO)
+                        logMessage("Processing: $photoPath", Color.GRAY)
+//                        logMessage("New photos queue: ${newPhotosQueue}", Color.GRAY)
+//                        logMessage("Failed uploads queue: ${failedUploadsQueue}", Color.GRAY)
                         val success = processAndUploadImageFile(photoPath!!)
 
                         // Only modify queues after processing is complete
@@ -70,26 +72,26 @@ class PhotoProcessor private constructor() {
                             if (success) {
                                 newPhotosQueue.remove(photoPath)
                                 failedUploadsQueue.remove(photoPath)
-                                logMessage("Successfully uploaded $photoPath", Log.INFO)
+                                logMessage("Successfully uploaded $photoPath", Color.GREEN)
                             } else {
                                 newPhotosQueue.remove(photoPath)
                                 failedUploadsQueue.remove(photoPath)
                                 failedUploadsQueue.add(photoPath)
-                                logMessage("Failed to upload $photoPath, moved to failed uploads queue", Log.WARN)
+                                logMessage("Failed to upload $photoPath, will retry", Color.YELLOW)
                             }
                         }
                     } catch (e: Exception) {
-                        logMessage("Error processing $photoPath: ${e.localizedMessage}", Log.ERROR)
+                        logMessage("Error processing $photoPath: ${e.localizedMessage}", Color.RED)
                     }
                 } else {
-                    logMessage("No photos to process at the moment", Log.INFO)
+                    logMessage("No photos to process at the moment", Color.GRAY)
                 }
 
                 try {
                     Thread.sleep(5000) // Sleep between checks. Adjust as needed.
                 } catch (ie: InterruptedException) {
                     Thread.currentThread().interrupt()
-                    logMessage("Photo processing thread interrupted", Log.ERROR)
+                    logMessage("Photo processing thread interrupted", Color.RED)
                 }
             }
         }.start()
@@ -142,7 +144,7 @@ class PhotoProcessor private constructor() {
             if (imageFile.exists() && imageFile.canRead()) {
 
                 // Log a message that the image file is being processed
-                logMessage("Processing image file: ${imageFile.name}", Log.INFO)
+//                logMessage("Processing image file: ${imageFile.name}", Color.GRAY)
 
                 // Decode the image file into a bitmap object
                 val originalBitmap = BitmapFactory.decodeFile(imageFile.absolutePath)
@@ -305,12 +307,12 @@ class PhotoProcessor private constructor() {
                 responseBody?.let {
                     val jsonObject = JSONObject(it)
                     val message = jsonObject.getString("message")
-                    logMessage("Upload successful of $fileName: $message", Color.GREEN)
+//                    logMessage("Upload successful: $fileName: $message", Color.GREEN)
                 }
                 true
             } else {
                 // Log failure and return false
-                logMessage("Upload failed for file $fileName: ${response.code} ${response.message}", Color.RED)
+                logMessage("Upload failed: $fileName: ${response.code} ${response.message}", Color.YELLOW)
                 false
             }
         } catch (e: java.lang.Exception) {
@@ -320,26 +322,31 @@ class PhotoProcessor private constructor() {
         }
     }
 
-    private fun logMessage(message: String, type: Int) {
-        // You can replace this with any logging mechanism you're using
-        when (type) {
-            Log.INFO -> Log.i("PhotoProcessor", message)
-            Log.WARN -> Log.w("PhotoProcessor", message)
-            Log.ERROR -> Log.e("PhotoProcessor", message)
-            else -> Log.d("PhotoProcessor", message)
-        }
-    }
-
     fun addPhotoToQueue(newPhoto: String) {
         synchronized(lock) {
             newPhotosQueue.add(newPhoto)
-            logMessage("New photo added to queue: $newPhoto", Log.INFO)
+//            logMessage("New photo added to queue: $newPhoto", Color.GRAY)
         }
     }
 
     companion object {
         // The single instance of PhotoProcessor
         val instance: PhotoProcessor by lazy { PhotoProcessor() }
+        var logTextView: TextView? = null
+        private val mainHandler = Handler(Looper.getMainLooper())
+        fun logMessage(message: String, color: Int = Color.GRAY) {
+            mainHandler.post {
+                logTextView?.let { textView ->
+                    val currentText = textView.text ?: ""
+                    val newText = currentText.toString() + "$message\n"
+                    val spannableText = SpannableString(newText)
+                    val start = currentText.length
+                    val end = newText.length
+                    spannableText.setSpan(ForegroundColorSpan(color), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    textView.text = spannableText
+                }
+            }
+        }
     }
 
     // Implement other necessary methods and cleanup based on your app's requirements...

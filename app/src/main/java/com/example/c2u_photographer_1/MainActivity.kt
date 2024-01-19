@@ -23,6 +23,7 @@ import android.util.Log
 import android.widget.Button
 import android.widget.TextView
 import android.view.View
+import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -69,16 +70,7 @@ class MainActivity : AppCompatActivity() {
     // Hemant Royale Camera's Sony Camera below:
     // val photoDir = "/storage/emulated/0/DCIM/Transfer & Tagging add-on/e522445b-bb7e-468b-9c1f-b5ffd19c2947/a30304c5-5f08-4670-a8a9-5de328ce82d5/02d9ec51-f471-4afb-8476-782634a762f6"
     // val photoDir = "/storage/emulated/10/DCIM/Transfer & Tagging add-on/be86c1fd-3dec-4628-80de-5dd2b088f692/3a760bb9-876b-4836-95e7-cba9f2c6e2d3/e5528206-d021-4fdf-9ad6-b9efd87147d2"
-    val photoDir = "/storage/emulated/0/Pictures/Canon EOS RP"
-
-    // This is the directory where the watermark is
-    val watermarkDir = "/storage/emulated/10/Watermark/watermark.png"
-
-    // This is the URL of the API to upload photos
-    val apiUrl = "https://c2u-api.onrender.com/upload-photo"
-
-    // This is the request code for selecting a photo from the gallery
-//    val pickImage = 100
+    var photoDir = "/storage/emulated/0/Pictures/c2u"
 
 
 
@@ -114,6 +106,18 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         logTextView = binding.logTextView
+        PhotoProcessor.logTextView = findViewById(R.id.photoProcessorLogTextView)
+
+//        val photoDirEditText: EditText = findViewById(R.id.photoDirEditText)
+//        photoDirEditText.setText(photoDir)
+//        val setFolderButton: Button = findViewById(R.id.setFolderButton)
+//
+//        setFolderButton.setOnClickListener {
+//            photoDir = photoDirEditText.text.toString()
+//            if (photoDir.isNotEmpty()) {
+//                restartFileObserver()
+//            }
+//        }
 
         if (PermissionManager.instance.hasStoragePermission(applicationContext, write = true)) {
             startFileObserver()
@@ -156,10 +160,10 @@ class MainActivity : AppCompatActivity() {
     // Recursive function to start file observers on all subdirectories
     fun startWatchingDirectory(directory: File) {
         try {
-            logMessage(
-                "Called startWatchingDirectory with directory: ${directory.path}",
-                Color.GRAY
-            )
+//            logMessage(
+//                "Called startWatchingDirectory with directory: ${directory.path}",
+//                Color.GRAY
+//            )
             directory.listFiles()?.forEach { file ->
                 if (file.isDirectory) {
                     // Start watching this directory
@@ -169,10 +173,10 @@ class MainActivity : AppCompatActivity() {
             // Create and start a file observer for this directory
             fileObserver = object : FileObserver(directory.path, mask) {
                 override fun onEvent(event: Int, path: String?) {
-                    logMessage(
-                        "File observer event: $event, path: $path, current time: ${System.currentTimeMillis()}",
-                        Color.GRAY
-                    )
+//                    logMessage(
+//                        "File observer event: $event, path: $path, current time: ${System.currentTimeMillis()}",
+//                        Color.GRAY
+//                    )
                     // logMessage("Event is equal to close write or moved to? ${event == FileObserver.CLOSE_WRITE || event == FileObserver.MOVED_TO}", Color.GRAY)
                     if ((event == FileObserver.CLOSE_WRITE || event == FileObserver.MOVED_TO || event == newFolderEvent) && path != null && isFileStable(
                             File("${directory.path}/$path")
@@ -183,7 +187,7 @@ class MainActivity : AppCompatActivity() {
                         if (File(filePath).isDirectory) {
                             // If it's a directory, start watching it
                             logMessage(
-                                "Inside onEvent, detected new folder, calling startWatchingDirectory next for: ${
+                                "Detected new folder: ${
                                     File(   
                                         filePath
                                     ).path
@@ -193,7 +197,7 @@ class MainActivity : AppCompatActivity() {
                         } else {
                             // If it's a file, process it
                             logMessage(
-                                "Inside onEvent, detected new file, adding it to uploadQueue: ${
+                                "Detected new file: ${
                                     File(
                                         filePath
                                     ).path
@@ -233,13 +237,13 @@ class MainActivity : AppCompatActivity() {
     fun isFileStable(file: File, delayMillis: Long = 2000): Boolean {
         try {
             val initialSize = file.length()
-            logMessage("Checking file size, initial size: $initialSize")
+//            logMessage("Checking file size, initial size: $initialSize")
 
             // Wait for a specified delay
             Thread.sleep(delayMillis)
 
             val finalSize = file.length()
-            logMessage("Checking file size, final size: $finalSize")
+//            logMessage("Checking file size, final size: $finalSize")
 
             // File is considered stable if its size hasn't changed
             return initialSize == finalSize
@@ -265,6 +269,35 @@ class MainActivity : AppCompatActivity() {
             // Log an exception message
             logMessage("Exception while stopping file observer: ${e.message}")
         }
+    }
+
+    fun onSetFolderClicked(view: View) {
+        val directoryPathEditText = findViewById<EditText>(R.id.photoDirEditText)
+        val directoryPathErrorTextView = findViewById<TextView>(R.id.directoryPathErrorTextView)
+        val directoryPath = directoryPathEditText.text.toString()
+
+        if (isValidDirectory(directoryPath)) {
+            photoDir = directoryPath
+            restartFileObserver()
+            directoryPathErrorTextView.visibility = View.GONE
+        } else {
+            directoryPathErrorTextView.text = "Invalid directory path"
+            directoryPathErrorTextView.visibility = View.VISIBLE
+        }
+    }
+
+    fun isValidDirectory(path: String): Boolean {
+        val directory = File(path)
+        return directory.exists() && directory.isDirectory
+    }
+
+
+    private fun restartFileObserver() {
+        // Stop the current file observer if it exists
+        stopFileObserver()
+
+        // Start a new file observer with the updated photoDir
+        startFileObserver()
     }
 
     // This is the method that logs a message to the log text view and scrolls it to the bottom
