@@ -12,7 +12,7 @@
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
         android:hint="Enter folder path"
-        android:text="/storage/emulated/10/Pictures/c2u"
+        android:text="/storage/emulated/0/Pictures/Transfer &amp; Tagging add-on"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />

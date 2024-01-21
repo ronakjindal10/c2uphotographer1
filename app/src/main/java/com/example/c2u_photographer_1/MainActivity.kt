@@ -70,7 +70,8 @@ class MainActivity : AppCompatActivity() {
     // Hemant Royale Camera's Sony Camera below:
     // val photoDir = "/storage/emulated/0/DCIM/Transfer & Tagging add-on/e522445b-bb7e-468b-9c1f-b5ffd19c2947/a30304c5-5f08-4670-a8a9-5de328ce82d5/02d9ec51-f471-4afb-8476-782634a762f6"
     // val photoDir = "/storage/emulated/10/DCIM/Transfer & Tagging add-on/be86c1fd-3dec-4628-80de-5dd2b088f692/3a760bb9-876b-4836-95e7-cba9f2c6e2d3/e5528206-d021-4fdf-9ad6-b9efd87147d2"
-    var photoDir = "/storage/emulated/0/Pictures/c2u"
+    var photoDir = "/storage/emulated/0/Pictures/Transfer & Tagging add-on"
+    val defaultPhotoDir = "/storage/emulated/0/Pictures/Transfer & Tagging add-on"
 
 
 
@@ -108,16 +109,12 @@ class MainActivity : AppCompatActivity() {
         logTextView = binding.logTextView
         PhotoProcessor.logTextView = findViewById(R.id.photoProcessorLogTextView)
 
-//        val photoDirEditText: EditText = findViewById(R.id.photoDirEditText)
-//        photoDirEditText.setText(photoDir)
-//        val setFolderButton: Button = findViewById(R.id.setFolderButton)
-//
-//        setFolderButton.setOnClickListener {
-//            photoDir = photoDirEditText.text.toString()
-//            if (photoDir.isNotEmpty()) {
-//                restartFileObserver()
-//            }
-//        }
+        // Load photoDir from SharedPreferences
+        val sharedPrefs = getSharedPreferences("PhotoAppPrefs", MODE_PRIVATE)
+        photoDir = sharedPrefs.getString("photoDir", defaultPhotoDir) ?: defaultPhotoDir
+
+        val photoDirEditText: EditText = findViewById(R.id.photoDirEditText)
+        photoDirEditText.setText(photoDir)
 
         if (PermissionManager.instance.hasStoragePermission(applicationContext, write = true)) {
             startFileObserver()
@@ -272,12 +269,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun onSetFolderClicked(view: View) {
-        val directoryPathEditText = findViewById<EditText>(R.id.photoDirEditText)
+        val photoDirEditText: EditText = findViewById(R.id.photoDirEditText)
         val directoryPathErrorTextView = findViewById<TextView>(R.id.directoryPathErrorTextView)
-        val directoryPath = directoryPathEditText.text.toString()
+        photoDir = photoDirEditText.text.toString()
 
-        if (isValidDirectory(directoryPath)) {
-            photoDir = directoryPath
+        if (isValidDirectory(photoDir)) {
+            // Save to SharedPreferences
+            val sharedPrefs = getSharedPreferences("PhotoAppPrefs", MODE_PRIVATE)
+            with(sharedPrefs.edit()) {
+                putString("photoDir", photoDir)
+                apply()
+            }
             restartFileObserver()
             directoryPathErrorTextView.visibility = View.GONE
         } else {
