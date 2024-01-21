@@ -54,7 +54,6 @@ class PhotoProcessor private constructor() {
 
     fun setWatermarkUri(uri: Uri) {
         watermarkUri = uri
-        loadWatermark()
     }
 
     // Start processing photos in a background thread
@@ -347,13 +346,13 @@ class PhotoProcessor private constructor() {
         fun logMessage(message: String, color: Int = Color.GRAY) {
             mainHandler.post {
                 logTextView?.let { textView ->
-                    val currentText = textView.text ?: ""
-                    val newText = currentText.toString() + "$message\n"
-                    val spannableText = SpannableString(newText)
-                    val start = currentText.length
-                    val end = newText.length
-                    spannableText.setSpan(ForegroundColorSpan(color), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-                    textView.text = spannableText
+                    // Create a SpannableString for the new message with the specified color
+                    val newMessageSpannable = SpannableString("$message\n").apply {
+                        setSpan(ForegroundColorSpan(color), 0, length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    }
+
+                    // Append the new SpannableString to the existing text
+                    textView.append(newMessageSpannable)
                 }
             }
         }
