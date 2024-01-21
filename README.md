@@ -18,4 +18,6 @@ Pending:
 12. Stop retrying upload of failed photos after a while
 ~~13. Implement Foreground service to make the app processes more resilient~~ Need to test how resilient the service is
 14. Some photos are getting uploaded twice. There are instances when the new file queue and retry queue have the same photos. Need to investigate.
-15. Choose watermark file from the UI so that the photographer doesn't need to deal with watermark file names.
+~~15. Choose watermark file from the UI so that the photographer doesn't need to deal with watermark file names.~~
+16. PhotoProcessor logs go back to gray colour when the next line is printed. Need to fix this.
+17. Clean up the logs that are printed: show file names only instead of directories and remove unnecessary logs like showing failed twice or logging the queues.

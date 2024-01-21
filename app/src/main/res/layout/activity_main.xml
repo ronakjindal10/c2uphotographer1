@@ -37,13 +37,24 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         android:onClick="onSetFolderClicked" />
+    <Button
+        android:id="@+id/addWatermarkButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Add Watermark"
+        app:layout_constraintTop_toBottomOf="@id/setFolderButton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="8dp"
+        android:onClick="onAddWatermarkClicked" />
+
 
     <!-- Container for logs -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:orientation="horizontal"
-        app:layout_constraintTop_toBottomOf="@id/setFolderButton"
+        app:layout_constraintTop_toBottomOf="@id/addWatermarkButton"
         app:layout_constraintBottom_toBottomOf="parent">
 
         <!-- MainActivity logs -->

@@ -1,9 +1,11 @@
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Matrix
 import android.media.ExifInterface
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.text.Spannable
@@ -40,13 +42,20 @@ class PhotoProcessor private constructor() {
     private val isRunning = AtomicBoolean(false)
 
     // This is the directory where the watermark is
-    val watermarkDir = "/storage/emulated/0/Watermark/watermark.png"
+    // val watermarkDir = "/storage/emulated/10/Watermark/watermark.png"
+
+    private var watermarkUri: Uri? = null
 
     // This is the bitmap object for the watermark image
     var watermarkBitmap: Bitmap? = null
 
     // This is the URL of the API to upload photos
     val apiUrl = "https://c2u-api.onrender.com/upload-photo"
+
+    fun setWatermarkUri(uri: Uri) {
+        watermarkUri = uri
+        loadWatermark()
+    }
 
     // Start processing photos in a background thread
     fun startProcessing() {
@@ -63,8 +72,8 @@ class PhotoProcessor private constructor() {
                 if (photoPath != null) {
                     try {
                         logMessage("Processing: $photoPath", Color.GRAY)
-//                        logMessage("New photos queue: ${newPhotosQueue}", Color.GRAY)
-//                        logMessage("Failed uploads queue: ${failedUploadsQueue}", Color.GRAY)
+                        logMessage("New photos queue: ${newPhotosQueue}", Color.GRAY)
+                        logMessage("Failed uploads queue: ${failedUploadsQueue}", Color.GRAY)
                         val success = processAndUploadImageFile(photoPath!!)
 
                         // Only modify queues after processing is complete
@@ -104,25 +113,16 @@ class PhotoProcessor private constructor() {
 
     // This is the method that loads the watermark image from the watermark directory
     fun loadWatermark() {
-        try {
-            // Create a file object for the watermark image file
-            val watermarkFile = File(watermarkDir)
-
-            // Check if the watermark file exists and is readable
-            if (watermarkFile.exists() && watermarkFile.canRead()) {
-                // Decode the watermark file into a bitmap object
-                watermarkBitmap = BitmapFactory.decodeFile(watermarkFile.absolutePath)
-
-                // Log a success message
-                logMessage("Watermark image loaded successfully", Color.GREEN)
-            } else {
-                // Log an error message
-                logMessage("Watermark file does not exist or is not readable", Color.YELLOW)
+        watermarkUri?.let { uri ->
+            try {
+                context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    watermarkBitmap = BitmapFactory.decodeStream(inputStream)
+                    logMessage("Watermark image loaded successfully", Color.GREEN)
+                }
+            } catch (e: Exception) {
+                logMessage("Exception while loading watermark image: ${e.message}", Color.RED)
             }
-        } catch (e: java.lang.Exception) {
-            // Log an exception message
-            logMessage("Exception while loading watermark image: ${e.message}", Color.YELLOW)
-        }
+        } ?: logMessage("Watermark Uri is null", Color.YELLOW)
     }
 
     private fun getNextPhotoToUpload(): String? {
@@ -330,10 +330,20 @@ class PhotoProcessor private constructor() {
     }
 
     companion object {
-        // The single instance of PhotoProcessor
-        val instance: PhotoProcessor by lazy { PhotoProcessor() }
+        lateinit var instance: PhotoProcessor
+        private lateinit var context: Context
         var logTextView: TextView? = null
         private val mainHandler = Handler(Looper.getMainLooper())
+
+        fun initialize(context: Context) {
+            this.context = context
+            instance = PhotoProcessor()
+        }
+
+        fun getContext(): Context {
+            return context
+        }
+
         fun logMessage(message: String, color: Int = Color.GRAY) {
             mainHandler.post {
                 logTextView?.let { textView ->
@@ -348,6 +358,7 @@ class PhotoProcessor private constructor() {
             }
         }
     }
+
 
     // Implement other necessary methods and cleanup based on your app's requirements...
 }

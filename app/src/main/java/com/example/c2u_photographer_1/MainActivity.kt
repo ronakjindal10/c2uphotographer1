@@ -98,11 +98,18 @@ class MainActivity : AppCompatActivity() {
     private val uploadExecutor = Executors.newSingleThreadExecutor()
     val isRunning = AtomicBoolean(true)
 
-//    private lateinit var photoProcessor: PhotoProcessor
+    // Add a constant for the watermark URI key
+    companion object {
+        private const val PREFS_NAME = "PhotoAppPrefs"
+        private const val KEY_WATERMARK_URI = "watermarkUri"
+        private const val REQUEST_CODE_PICK_WATERMARK = 2
+    }
 
     // This is the method that is called when the activity is created
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Initialize PhotoProcessor with the context
+        PhotoProcessor.initialize(this)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -110,8 +117,13 @@ class MainActivity : AppCompatActivity() {
         PhotoProcessor.logTextView = findViewById(R.id.photoProcessorLogTextView)
 
         // Load photoDir from SharedPreferences
-        val sharedPrefs = getSharedPreferences("PhotoAppPrefs", MODE_PRIVATE)
+        val sharedPrefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         photoDir = sharedPrefs.getString("photoDir", defaultPhotoDir) ?: defaultPhotoDir
+        val watermarkUriString = sharedPrefs.getString(KEY_WATERMARK_URI, null)
+        watermarkUriString?.let {
+            val watermarkUri = Uri.parse(it)
+            PhotoProcessor.instance.setWatermarkUri(watermarkUri)
+        }
 
         val photoDirEditText: EditText = findViewById(R.id.photoDirEditText)
         photoDirEditText.setText(photoDir)
@@ -300,6 +312,30 @@ class MainActivity : AppCompatActivity() {
 
         // Start a new file observer with the updated photoDir
         startFileObserver()
+    }
+
+    // Method to pick a watermark image
+    fun onAddWatermarkClicked(view: View) {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "image/*"
+        }
+        startActivityForResult(intent, REQUEST_CODE_PICK_WATERMARK)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_CODE_PICK_WATERMARK && resultCode == Activity.RESULT_OK) {
+            data?.data?.also { uri ->
+                contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+                PhotoProcessor.instance.setWatermarkUri(uri)
+                val sharedPrefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                sharedPrefs.edit().putString(KEY_WATERMARK_URI, uri.toString()).apply()
+            }
+        }
     }
 
     // This is the method that logs a message to the log text view and scrolls it to the bottom
