@@ -20,4 +20,9 @@ Pending:
 14. Some photos are getting uploaded twice. There are instances when the new file queue and retry queue have the same photos. Need to investigate.
 ~~15. Choose watermark file from the UI so that the photographer doesn't need to deal with watermark file names.~~
 ~~16. PhotoProcessor logs go back to gray colour when the next line is printed. Need to fix this.~~
-17. Clean up the logs that are printed: show file names only instead of directories and remove unnecessary logs like showing failed twice or logging the queues.
+17. Clean up the logs that are printed: show file names only instead of directories and remove unnecessary logs like showing failed twice ~~or logging the queues~~.
+
+
+C2U product ideas:
+1. The photographer can DM the edited photos to guests on WhatsApp building a connection with them for future business. The guests are asked for their phone number during sign up. The photographer uploads the edited photos later and we can use a WhatsApp extension on their browser to send photos on their behalf.
+2. The guest is asked to review the photographer after downloading a few photos. The review may be on Google maps or any other platform the photographer wants.

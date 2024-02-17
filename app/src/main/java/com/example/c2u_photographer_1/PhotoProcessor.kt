@@ -54,6 +54,7 @@ class PhotoProcessor private constructor() {
 
     fun setWatermarkUri(uri: Uri) {
         watermarkUri = uri
+        loadWatermark()
     }
 
     // Start processing photos in a background thread
@@ -71,8 +72,11 @@ class PhotoProcessor private constructor() {
                 if (photoPath != null) {
                     try {
                         logMessage("Processing: $photoPath", Color.GRAY)
-                        logMessage("New photos queue: ${newPhotosQueue}", Color.GRAY)
+                        //log number of photos in new photos queue and failed uploads queue
+                        logMessage("New photos queue length: ${newPhotosQueue.size}", Color.GRAY)
                         logMessage("Failed uploads queue: ${failedUploadsQueue}", Color.GRAY)
+                        // logMessage("New photos queue length: ${newPhotosQueue}", Color.GRAY)
+                        // logMessage("Failed uploads queue: ${failedUploadsQueue}", Color.GRAY)
                         val success = processAndUploadImageFile(photoPath!!)
 
                         // Only modify queues after processing is complete
@@ -123,6 +127,7 @@ class PhotoProcessor private constructor() {
             }
         } ?: logMessage("Watermark Uri is null", Color.YELLOW)
     }
+
 
     private fun getNextPhotoToUpload(): String? {
         synchronized(lock) {
