@@ -26,6 +26,8 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlin.math.min
+import java.time.Instant
+import java.time.Duration
 
 class PhotoProcessor private constructor() {
 
@@ -52,6 +54,9 @@ class PhotoProcessor private constructor() {
     // This is the URL of the API to upload photos
     val apiUrl = "https://c2u-api.onrender.com/upload-photo"
 
+    private var lastUploadedPhoto: Pair<String, Instant>? = null
+    private var uploadedPhotosCount = 0
+
     fun setWatermarkUri(uri: Uri) {
         watermarkUri = uri
         loadWatermark()
@@ -73,8 +78,7 @@ class PhotoProcessor private constructor() {
                     try {
                         logMessage("Processing: $photoPath", Color.GRAY)
                         //log number of photos in new photos queue and failed uploads queue
-                        logMessage("New photos queue length: ${newPhotosQueue.size}", Color.GRAY)
-                        logMessage("Failed uploads queue: ${failedUploadsQueue}", Color.GRAY)
+                        // logMessage("New photos queue length: ${newPhotosQueue.size}", Color.GRAY)
                         // logMessage("New photos queue length: ${newPhotosQueue}", Color.GRAY)
                         // logMessage("Failed uploads queue: ${failedUploadsQueue}", Color.GRAY)
                         val success = processAndUploadImageFile(photoPath!!)
@@ -313,6 +317,9 @@ class PhotoProcessor private constructor() {
                     val message = jsonObject.getString("message")
 //                    logMessage("Upload successful: $fileName: $message", Color.GREEN)
                 }
+                // Update last uploaded photo info and increment counter
+                lastUploadedPhoto = Pair(fileName, Instant.now())
+                uploadedPhotosCount++
                 true
             } else {
                 // Log failure and return false
@@ -331,6 +338,29 @@ class PhotoProcessor private constructor() {
             newPhotosQueue.add(newPhoto)
 //            logMessage("New photo added to queue: $newPhoto", Color.GRAY)
         }
+    }
+
+    // Add a method to get the required info
+    fun getUploadInfo(): String {
+        val lastPhotoInfo = lastUploadedPhoto?.let {
+            val duration = Duration.between(it.second, Instant.now())
+            "${it.first} ${formatDuration(duration)}"
+        } ?: "NA"
+
+        return "Last photo uploaded: $lastPhotoInfo\n" +
+               "New photos awaiting upload: ${newPhotosQueue.size}\n" +
+               "Photos awaiting re-try: ${failedUploadsQueue.size}\n" +
+               "Photos uploaded: $uploadedPhotosCount"
+    }
+
+    // Helper method to format Duration to a readable string
+    private fun formatDuration(duration: Duration): String {
+        return listOf<Pair<Long, String>>(
+            duration.toDaysPart().toLong() to "d",
+            duration.toHoursPart().toLong() to "h",
+            duration.toMinutesPart().toLong() to "m",
+            duration.toSecondsPart().toLong() to "s"
+        ).joinToString(" ") { if (it.first > 0) "${it.first}${it.second}" else "" }.trim()
     }
 
     companion object {

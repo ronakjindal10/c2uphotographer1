@@ -153,6 +153,18 @@ class MainActivity : AppCompatActivity() {
         PermissionManager.instance.onRequestPermissionsResult(requestCode)
     }
 
+    override fun onResume() {
+        super.onResume()
+        val handler = Handler(Looper.getMainLooper())
+        val runnable = object : Runnable {
+            override fun run() {
+                updateUploadInfo()
+                handler.postDelayed(this, 1000) // Update every second
+            }
+        }
+        handler.post(runnable)
+    }
+
     // When you want to start the service
     fun startPhotoService() {
         val serviceIntent = Intent(this, PhotoProcessingService::class.java)
@@ -243,23 +255,34 @@ class MainActivity : AppCompatActivity() {
     }
 
     //This function checks if the file is ready to be uploaded, avoiding partially downloaded files
-    fun isFileStable(file: File, delayMillis: Long = 2000): Boolean {
+    fun isFileStable(file: File, delayMillis: Long = 500): Boolean {
         try {
             val initialSize = file.length()
-//            logMessage("Checking file size, initial size: $initialSize")
+            // logMessage("Checking file size, initial size: $initialSize")
 
             // Wait for a specified delay
             Thread.sleep(delayMillis)
 
             val finalSize = file.length()
-//            logMessage("Checking file size, final size: $finalSize")
+            // logMessage("Checking file size, final size: $finalSize")
 
-            // File is considered stable if its size hasn't changed
-            return initialSize == finalSize
+            // return true if the final file size is greater than 0 and it's equal to initial size
+            if (finalSize > 0) {
+                return initialSize == finalSize
+            }
+            else {
+                return false
+            }
         } catch (e: Exception) {
             logMessage("Exception while checking file stability: ${e.message}", Color.YELLOW)
             return false
         }
+    }
+
+    private fun updateUploadInfo() {
+        val info = PhotoProcessor.instance.getUploadInfo()
+        // Assuming you have a TextView with id upload_info in your layout
+        findViewById<TextView>(R.id.upload_info).text = info
     }
 
 
