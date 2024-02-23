@@ -47,6 +47,7 @@ class PhotoProcessor private constructor() {
     // val watermarkDir = "/storage/emulated/10/Watermark/watermark.png"
 
     private var watermarkUri: Uri? = null
+    private lateinit var email: String
 
     // This is the bitmap object for the watermark image
     var watermarkBitmap: Bitmap? = null
@@ -60,6 +61,11 @@ class PhotoProcessor private constructor() {
     fun setWatermarkUri(uri: Uri) {
         watermarkUri = uri
         loadWatermark()
+    }
+
+    fun setEmail(email: String) {
+        this.email = email
+        logMessage("Inside setEmail, email is: $email", Color.GRAY)
     }
 
     // Start processing photos in a background thread
@@ -290,6 +296,7 @@ class PhotoProcessor private constructor() {
         val requestBody = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
             .addFormDataPart("photo", fileName, byteArray.toRequestBody("image/jpeg".toMediaType()))
+            .addFormDataPart("email", email)
             .build()
 
         val request = Request.Builder()

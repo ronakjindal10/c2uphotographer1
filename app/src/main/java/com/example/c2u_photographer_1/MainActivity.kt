@@ -3,6 +3,7 @@ import PhotoProcessor
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -59,25 +60,15 @@ import de.lolhens.resticui.util.PermissionManager
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+    private lateinit var emailEditText: EditText
+    private lateinit var sharedPreferences: SharedPreferences
 
     // This is the directory where the photos are getting added
-    // Nikon on Redmi K20:
-    // val photoDir = "/storage/emulated/0/Nikon downloads"
-    // Bangalore photographer's Sony A7M3:
-    // val photoDir = "/storage/emulated/10/Pictures/Canon EOS R10"
-    // val photoDir = "/storage/emulated/0/DCIM/Transfer & Tagging add-on/e522445b-bb7e-468b-9c1f-b5ffd19c2947/6c00f2fc-7bd3-48cc-a7e5-4a151aaed57b/b63df105-c1ae-4051-83dd-ab8a0bd3feef"
-    // val photoDir = "/storage/emulated/0/DCIM/Transfer & Tagging add-on/e522445b-bb7e-468b-9c1f-b5ffd19c2947/2cfbb0a6-3d29-43e1-a59e-9f39124d15c4"
-    // Hemant Royale Camera's Sony Camera below:
-    // val photoDir = "/storage/emulated/0/DCIM/Transfer & Tagging add-on/e522445b-bb7e-468b-9c1f-b5ffd19c2947/a30304c5-5f08-4670-a8a9-5de328ce82d5/02d9ec51-f471-4afb-8476-782634a762f6"
-    // val photoDir = "/storage/emulated/10/DCIM/Transfer & Tagging add-on/be86c1fd-3dec-4628-80de-5dd2b088f692/3a760bb9-876b-4836-95e7-cba9f2c6e2d3/e5528206-d021-4fdf-9ad6-b9efd87147d2"
     var photoDir = "/storage/emulated/0/Pictures/Transfer & Tagging add-on"
     val defaultPhotoDir = "/storage/emulated/0/Pictures/Transfer & Tagging add-on"
 
-
-
     // This is the file observer object that monitors the photo directory for changes
     var fileObserver: FileObserver? = null
-//    var observer: FileObserver? = null
     private val allFileObservers = mutableListOf<FileObserver>()
 
     // This is the text view object that displays the logs to the user
@@ -86,8 +77,6 @@ class MainActivity : AppCompatActivity() {
     // We'll monitor the following events:
     val newFolderEvent = 1073742080
     val mask = FileObserver.CLOSE_WRITE or FileObserver.MOVED_TO or FileObserver.CREATE or newFolderEvent
-    // val mask = FileObserver.CLOSE_WRITE
-    // val mask = FileObserver.ALL_EVENTS
 
     // Define a queue for file uploads
     val photoQueue: Queue<String> = LinkedList<String>()
@@ -103,6 +92,7 @@ class MainActivity : AppCompatActivity() {
         private const val PREFS_NAME = "PhotoAppPrefs"
         private const val KEY_WATERMARK_URI = "watermarkUri"
         private const val REQUEST_CODE_PICK_WATERMARK = 2
+        private const val EMAIL = ""
     }
 
     // This is the method that is called when the activity is created
@@ -116,14 +106,19 @@ class MainActivity : AppCompatActivity() {
         logTextView = binding.logTextView
         PhotoProcessor.logTextView = findViewById(R.id.photoProcessorLogTextView)
 
+        // Initialize sharedPreferences
+        sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+
         // Load photoDir from SharedPreferences
-        val sharedPrefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        photoDir = sharedPrefs.getString("photoDir", defaultPhotoDir) ?: defaultPhotoDir
-        val watermarkUriString = sharedPrefs.getString(KEY_WATERMARK_URI, null)
+        photoDir = sharedPreferences.getString("photoDir", defaultPhotoDir) ?: defaultPhotoDir
+        val watermarkUriString = sharedPreferences.getString(KEY_WATERMARK_URI, null)
         watermarkUriString?.let {
             val watermarkUri = Uri.parse(it)
             PhotoProcessor.instance.setWatermarkUri(watermarkUri)
         }
+
+        emailEditText = findViewById(R.id.emailEditText)
+        emailEditText.setText(sharedPreferences.getString("email", ""))
 
         val photoDirEditText: EditText = findViewById(R.id.photoDirEditText)
         photoDirEditText.setText(photoDir)
@@ -177,14 +172,9 @@ class MainActivity : AppCompatActivity() {
         stopService(serviceIntent)  // Stop the service
     }
 
-
     // Recursive function to start file observers on all subdirectories
     fun startWatchingDirectory(directory: File) {
         try {
-//            logMessage(
-//                "Called startWatchingDirectory with directory: ${directory.path}",
-//                Color.GRAY
-//            )
             directory.listFiles()?.forEach { file ->
                 if (file.isDirectory) {
                     // Start watching this directory
@@ -194,15 +184,9 @@ class MainActivity : AppCompatActivity() {
             // Create and start a file observer for this directory
             fileObserver = object : FileObserver(directory.path, mask) {
                 override fun onEvent(event: Int, path: String?) {
-//                    logMessage(
-//                        "File observer event: $event, path: $path, current time: ${System.currentTimeMillis()}",
-//                        Color.GRAY
-//                    )
-                    // logMessage("Event is equal to close write or moved to? ${event == FileObserver.CLOSE_WRITE || event == FileObserver.MOVED_TO}", Color.GRAY)
                     if ((event == FileObserver.CLOSE_WRITE || event == FileObserver.MOVED_TO || event == newFolderEvent) && path != null && isFileStable(
                             File("${directory.path}/$path")
                         )){
-                        // if (event == FileObserver.CLOSE_WRITE && path != null){
                         val filePath = "${directory.path}/$path"
                         // Check if it's a directory or a file
                         if (File(filePath).isDirectory) {
@@ -258,14 +242,10 @@ class MainActivity : AppCompatActivity() {
     fun isFileStable(file: File, delayMillis: Long = 500): Boolean {
         try {
             val initialSize = file.length()
-            // logMessage("Checking file size, initial size: $initialSize")
-
             // Wait for a specified delay
             Thread.sleep(delayMillis)
 
             val finalSize = file.length()
-            // logMessage("Checking file size, final size: $finalSize")
-
             // return true if the final file size is greater than 0 and it's equal to initial size
             if (finalSize > 0) {
                 return initialSize == finalSize
@@ -285,13 +265,10 @@ class MainActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.upload_info).text = info
     }
 
-
-
     // This is the method that stops the file observer
     fun stopFileObserver() {
         try {
             // Stop watching for events in the photo directory
-            // fileObserver?.stopWatching()
             allFileObservers.forEach { it.stopWatching() }
             allFileObservers.clear()
 
@@ -307,16 +284,21 @@ class MainActivity : AppCompatActivity() {
         val photoDirEditText: EditText = findViewById(R.id.photoDirEditText)
         val directoryPathErrorTextView = findViewById<TextView>(R.id.directoryPathErrorTextView)
         photoDir = photoDirEditText.text.toString()
+        // Save the email when the set folder button is clicked
+        val email = emailEditText.text.toString()
 
         if (isValidDirectory(photoDir)) {
             // Save to SharedPreferences
             val sharedPrefs = getSharedPreferences("PhotoAppPrefs", MODE_PRIVATE)
             with(sharedPrefs.edit()) {
+                putString("email", email)
                 putString("photoDir", photoDir)
                 apply()
             }
             restartFileObserver()
             directoryPathErrorTextView.visibility = View.GONE
+            // Set the email in PhotoProcessor
+            PhotoProcessor.instance.setEmail(email)
         } else {
             directoryPathErrorTextView.text = "Invalid directory path"
             directoryPathErrorTextView.visibility = View.VISIBLE
@@ -327,7 +309,6 @@ class MainActivity : AppCompatActivity() {
         val directory = File(path)
         return directory.exists() && directory.isDirectory
     }
-
 
     private fun restartFileObserver() {
         // Stop the current file observer if it exists
@@ -355,8 +336,7 @@ class MainActivity : AppCompatActivity() {
                     Intent.FLAG_GRANT_READ_URI_PERMISSION
                 )
                 PhotoProcessor.instance.setWatermarkUri(uri)
-                val sharedPrefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                sharedPrefs.edit().putString(KEY_WATERMARK_URI, uri.toString()).apply()
+                sharedPreferences.edit().putString(KEY_WATERMARK_URI, uri.toString()).apply()
             }
         }
     }
@@ -384,20 +364,20 @@ class MainActivity : AppCompatActivity() {
             // Set spannable text on logTextView
             logTextView?.text = spannableText
 
-// Get the layout of the log text view
+            // Get the layout of the log text view
             val layout = logTextView?.layout
 
-// Check if the layout is not null
+            // Check if the layout is not null
             if (layout != null) {
-// Get the scroll amount to scroll to the bottom of the text view
+                // Get the scroll amount to scroll to the bottom of the text view
                 val scrollAmount = layout.getLineTop(logTextView!!.lineCount) - logTextView!!.height
 
-// Check if the scroll amount is positive or zero
+                // Check if the scroll amount is positive or zero
                 if (scrollAmount >= 0) {
-// Scroll to the bottom of the text view by using smooth scroll by amount method
+                    // Scroll to the bottom of the text view by using smooth scroll by amount method
                     logTextView?.scrollTo(0, scrollAmount)
                 } else {
-// Scroll to the top of the text view
+                    // Scroll to the top of the text view
                     logTextView?.scrollTo(0, 0)
                 }
             }
@@ -408,7 +388,7 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
 
-// Stop the file observer
+        // Stop the file observer
         stopFileObserver()
         stopPhotoService()
     }
