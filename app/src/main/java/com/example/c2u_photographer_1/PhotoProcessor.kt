@@ -43,11 +43,8 @@ class PhotoProcessor private constructor() {
     // Atomic boolean to control the processing thread
     private val isRunning = AtomicBoolean(false)
 
-    // This is the directory where the watermark is
-    // val watermarkDir = "/storage/emulated/10/Watermark/watermark.png"
-
     private var watermarkUri: Uri? = null
-    private lateinit var email: String
+    private var email: String = "email"
 
     // This is the bitmap object for the watermark image
     var watermarkBitmap: Bitmap? = null
@@ -150,6 +147,10 @@ class PhotoProcessor private constructor() {
     }
 
     private fun processAndUploadImageFile(filePath: String): Boolean {
+//        if (!::email.isInitialized) {
+//            logMessage("Email has not been set. Aborting upload.", Color.RED)
+//            return false
+//        }
         try {
             // Create a file object for the image file
             val imageFile = File(filePath)
@@ -238,38 +239,37 @@ class PhotoProcessor private constructor() {
         if (watermarkBitmap != null) {
 
             // Get the original width and height of the bitmap in pixels
-            // Get the original width and height of the bitmap in pixels
             val originalWidth = originalBitmap.width
             val originalHeight = originalBitmap.height
 
-// Get the watermark width and height in pixels
+            // Get the watermark width and height in pixels
             val watermarkWidth = watermarkBitmap!!.width
             val watermarkHeight = watermarkBitmap!!.height
 
-// Calculate the margin for placing the watermark at the bottom right corner of the bitmap
+            // Calculate the margin for placing the watermark at the bottom right corner of the bitmap
             val margin = 10
 
-// Create a new bitmap object with the same dimensions as the original bitmap
+            // Create a new bitmap object with the same dimensions as the original bitmap
             val watermarkedBitmap = Bitmap.createBitmap(originalWidth, originalHeight, originalBitmap.config)
 
-// Create a canvas object to draw on the new bitmap
+            // Create a canvas object to draw on the new bitmap
             val canvas = Canvas(watermarkedBitmap)
 
-// Draw the original bitmap on the canvas
+            // Draw the original bitmap on the canvas
             canvas.drawBitmap(originalBitmap, 0f, 0f, null)
 
-// Draw the watermark bitmap on the canvas at the bottom right corner with some margin
+            // Draw the watermark bitmap on the canvas at the bottom right corner with some margin
             canvas.drawBitmap(watermarkBitmap!!, (originalWidth - watermarkWidth - margin).toFloat(), (originalHeight - watermarkHeight - margin).toFloat(), null)
 
-// Return the watermarked bitmap object
+            // Return the watermarked bitmap object
             return watermarkedBitmap
 
         } else {
-// Log an error message
+            // Log an error message
             logMessage("Watermark image is null", Color.YELLOW)
         }
 
-// Return the original bitmap object as a fallback
+        // Return the original bitmap object as a fallback
         return originalBitmap
 
     }
@@ -277,16 +277,16 @@ class PhotoProcessor private constructor() {
     // This is the method that converts the bitmap object into a byte array
     fun bitmapToByteArray(bitmap: Bitmap): ByteArray {
 
-// Create a byte output stream object to write the bitmap data
+        // Create a byte output stream object to write the bitmap data
         val byteOutputStream = ByteArrayOutputStream()
 
-// Compress the bitmap into a JPEG format and write it to the byte output stream
+        // Compress the bitmap into a JPEG format and write it to the byte output stream
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteOutputStream)
 
-// Convert the byte output stream into a byte array
+        // Convert the byte output stream into a byte array
         val byteArray = byteOutputStream.toByteArray()
 
-// Return the byte array
+        // Return the byte array
         return byteArray
 
     }
@@ -362,12 +362,14 @@ class PhotoProcessor private constructor() {
 
     // Helper method to format Duration to a readable string
     private fun formatDuration(duration: Duration): String {
-        return listOf<Pair<Long, String>>(
-            duration.toDaysPart().toLong() to "d",
-            duration.toHoursPart().toLong() to "h",
-            duration.toMinutesPart().toLong() to "m",
-            duration.toSecondsPart().toLong() to "s"
-        ).joinToString(" ") { if (it.first > 0) "${it.first}${it.second}" else "" }.trim()
+        val seconds = duration.seconds
+        val absSeconds = Math.abs(seconds)
+        val positive = String.format(
+            "%d:%02d:%02d",
+            absSeconds / 3600,
+            (absSeconds % 3600) / 60,
+            absSeconds % 60)
+        return if (seconds < 0) "-$positive" else positive
     }
 
     companion object {

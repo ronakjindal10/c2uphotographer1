@@ -259,11 +259,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateUploadInfo() {
-        val info = PhotoProcessor.instance.getUploadInfo()
-        // Assuming you have a TextView with id upload_info in your layout
-        findViewById<TextView>(R.id.upload_info).text = info
-    }
+     private fun updateUploadInfo() {
+         val info = PhotoProcessor.instance.getUploadInfo()
+         // Assuming you have a TextView with id upload_info in your layout
+         findViewById<TextView>(R.id.upload_info).text = info
+     }
 
     // This is the method that stops the file observer
     fun stopFileObserver() {

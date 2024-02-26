@@ -18,6 +18,11 @@ class PhotoProcessingService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+//        if (!::photoProcessor.isInitialized) {
+//            Log.e("PhotoProcessingService", "PhotoProcessor is not initialized.")
+//            // Consider stopping the service or another recovery action here
+//            return START_NOT_STICKY
+//        }
         startForeground(1, createNotification())
 
         // Initialize and start photo processing
