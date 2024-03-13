@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "203324952645",
+    "project_id": "c2u-app",
+    "storage_bucket": "c2u-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:203324952645:android:488357f1513f24268f932c",
+        "android_client_info": {
+          "package_name": "com.example.c2u_photographer_1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAx87sY_DPMrAhViwrDKldn7IxCrbhXdGo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

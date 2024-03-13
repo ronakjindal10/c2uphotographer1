@@ -24,6 +24,7 @@ import android.util.Log
 import android.widget.Button
 import android.widget.TextView
 import android.view.View
+import android.view.ViewGroup
 import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -64,8 +65,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var sharedPreferences: SharedPreferences
 
     // This is the directory where the photos are getting added
-    var photoDir = "/storage/emulated/0/Pictures/Transfer & Tagging add-on"
-    val defaultPhotoDir = "/storage/emulated/0/Pictures/Transfer & Tagging add-on"
+    var photoDir = "/storage/emulated/0/DCIM/Transfer & Tagging add-on/"
+    val defaultPhotoDir = "/storage/emulated/0/DCIM/Transfer & Tagging add-on/"
 
     // This is the file observer object that monitors the photo directory for changes
     var fileObserver: FileObserver? = null
